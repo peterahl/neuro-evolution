@@ -1,4 +1,5 @@
 # -*- coding: urf-8 -*-
+from queue import Queue
 from threading import Thread
 
 
@@ -11,9 +12,10 @@ CONFIGURATION = "configuration"
 SIMULATIONS_COUNT = "simulations_count"
 
 
-def run_simulation(scenario_nr, simulation_nr, Simulator, configuration):
-    Simulator(configuration).run()
-
+def run_simulation(q, simulator_class, configuration, init_state):
+    res_state = simulator_class(configuration, init_state).run()
+    # put resulting state information into queue
+    q.put(res_state)
 
 def run(configuration):
     """ Run several simulation scenarios.
@@ -32,6 +34,9 @@ def run(configuration):
     for scenario_nr, scenario in enumerate(configuration):
         evaluation = __import__(scenario[EVALUATION_FUNCTION])
         Simulator = __import__(scenario[SIMULATOR_CLASS])
+        simulations_count = scenario[SIMULATIONS_COUNT]
+        sim_states = [{} for _ in range(simulations_count)]
+        queues = [Queue() for _ in range(simulations_count)]
         should_continue = None
         round_nr = 0
         while should_continue is None or should_continue:
@@ -39,14 +44,15 @@ def run(configuration):
                 Thread(
                     target=run_simulation,
                     args=(
-                        scenario_nr, sim_nr, Simulator,
-                        scenario[CONFIGURATION]))
-                for sim_nr in scenario[SIMULATIONS_COUNT]]
+                        q, Simulator, scenario[CONFIGURATION], s))
+                for q, s in zip(queues, sim_states)]
             for t in simulator_threads:
                 t.start()
+            for i, q in enumerate(queues):
+                sim_states[i] = q.get()
             for t in simulator_threads:
                 t.join()
-            should_continue = evaluation(scenario_nr, round_nr)
+            should_continue = #evaluation(sim_states)
             round_nr += 1
 
 # TODO: add a function to show off the best agent?

@@ -5,30 +5,48 @@ from .position import Position
 from .sim_objects.sim_object import SimObject
 
 
-class MapDimensionMissMatch(Exception):
+class MapDimensionMismatch(Exception):
     pass
 
 
 class ObjectsMap():
 
-    def __init__(self, configuration):
+    def __init__(self, configuration, state):
         """
         {
+          # ASCII representation of map as array of strings
           map: ["######", "#  # #", "#  # #", "######"],
+
+          # tuple of *args, **kwds
           parameters: {(0, 0): (["argument"], {"key": "value"})}
+
         }
         """
         objects_map = configuration["map"]  # shortcut
         params = configuration.get("parameters", {})  # shortcut
-        self._map = list(chain.from_iterable(
-            [SimObject.from_symbol(symbol, params.get((x, y)))
-                for x, symbol in enumerate(row)]
-            for y, row in enumerate(objects_map)))
+
+        # Create internal map representation containing objects at their
+        # respective (x,y) positions
+        self._map = list(
+            chain.from_iterable(
+                [
+                    SimObject.from_symbol(symbol, params.get((x, y)), state)
+                    for x, symbol in enumerate(row)
+                ]
+                for y, row in enumerate(objects_map)
+            )
+        )
+
+        # Save dimensions of map
         self._height = len(objects_map)
         self._width = len(objects_map[0])
+
+        # sanity check for map
         if self._height * self._width != len(self._map):
-            raise MapDimensionMissMatch(
+            raise MapDimensionMismatch(
                 (self._height * self._width, len(self._map)))
+
+        # Create lookup dictionary (hash table) for objects
         self._positions = {
             o: self._position_for_index(i) for i, o in enumerate(self._map)}
 

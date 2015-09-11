@@ -80,9 +80,9 @@ class SimObject():
         SimObject._objects.pop(cls.SYMBOL, None)
 
     @staticmethod
-    def from_symbol(symbol, params=None):
+    def from_symbol(symbol, params=None, state):
         args = []
         kwds = {}
         if params is not None:
             args, kwds = params
-        return SimObject._objects[symbol](*args, **kwds)
+        return SimObject._objects[symbol](state, *args, **kwds)

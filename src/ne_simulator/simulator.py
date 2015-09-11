@@ -7,10 +7,11 @@ from .sim_objects import SimObject, Empty
 
 class Simulator(SimBase):
 
-    def __init__(self, configuration):
-        self._map = ObjectsMap(configuration)
+    def __init__(self, configuration, init_state):
+        self._map = ObjectsMap(configuration, init_state)
         self._step_count = 0
-        super().__init__(configuration)
+        self._state = init_state
+        super().__init__(configuration, init_state)
 
     def should_run(self):
         return False
@@ -78,3 +79,4 @@ class Simulator(SimBase):
                 self.perform_action(o)
             self._step_count += 1
             self.record_map()
+        return self._state

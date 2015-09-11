@@ -53,17 +53,21 @@ class RandomAgent(SimObject):
         else:
             # What is visible to the agent?
             position = objects_map.get_position_for_object(self)
+
             front = objects_map.get_object_for_position(
                 position.move(self._direction))
             left = objects_map.get_object_for_position(
                 position.move(turn(self._direction, False)))
             right = objects_map.get_object_for_position(
                 position.move(turn(self._direction, True)))
+
             visible = (front, left, right)
+
             # What could the agent do?
             actions = [
                 self.Action.TURN_LEFT
                 if random() >= 0.5 else self.Action.TURN_RIGHT]
+
             if any(map(_is_food, visible)):
                 actions.append(self.Action.EAT)
             if any(map(_is_empty, visible)):
