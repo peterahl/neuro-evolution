@@ -68,3 +68,7 @@ target/
 
 # Dropbox
 .dropbox
+
+# ipyton notebook
+.ipynb_checkpoints/
+peters-notebook.ipynb
