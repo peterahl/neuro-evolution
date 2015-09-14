@@ -12,6 +12,15 @@ class SimObject():
 
     SYMBOL = "T"  # reserved for testing!
 
+    def __init__(self, state, *args, **kwds):
+        """ Placeholder.
+
+        Use state to get parameters (previous simulation state) for the object.
+
+        :type state: dict
+        """
+        super().__init__()
+
     @unique
     class Action(Enum):
 
@@ -63,6 +72,8 @@ class SimObject():
     def action(self):
         """ Simulation moves one tick forward, perform action and read inputs
         for next action.
+
+        Do not forget to update the simulation state, if necessary!
         """
         return None
 
@@ -80,7 +91,7 @@ class SimObject():
         SimObject._objects.pop(cls.SYMBOL, None)
 
     @staticmethod
-    def from_symbol(symbol, params=None, state):
+    def from_symbol(symbol, state, params=None):
         args = []
         kwds = {}
         if params is not None:

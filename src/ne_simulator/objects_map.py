@@ -30,7 +30,7 @@ class ObjectsMap():
         self._map = list(
             chain.from_iterable(
                 [
-                    SimObject.from_symbol(symbol, params.get((x, y)), state)
+                    SimObject.from_symbol(symbol, state, params.get((x, y)))
                     for x, symbol in enumerate(row)
                 ]
                 for y, row in enumerate(objects_map)

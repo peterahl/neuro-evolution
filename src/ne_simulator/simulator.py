@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 from .objects_map import ObjectsMap
 from .position import turn
-from .sim_mixins.base import SimBase
 from .sim_objects import SimObject, Empty
 
 
-class Simulator(SimBase):
+class Simulator():
 
-    def __init__(self, configuration, init_state):
-        self._map = ObjectsMap(configuration, init_state)
+    def __init__(self, configuration, state):
+        super().__init__()
+        self._map = ObjectsMap(configuration, state)
         self._step_count = 0
-        self._state = init_state
-        super().__init__(configuration, init_state)
+        self._state = state
 
     def should_run(self):
         return False
@@ -58,7 +57,9 @@ class Simulator(SimBase):
         Action = SimObject.Action  # shortcut
         action = o.action()
         if action == Action.DIE:
-            self._map.set_object(Empty(), self._map.get_position_for_object(o))
+            self._map.set_object(
+                SimObject.from_symbol(Empty.SYMBOL, self._state),
+                self._map.get_position_for_object(o))
         if action == Action.MOVE:
             self._move_object(o)
         if action in (Action.TURN_LEFT, Action.TURN_RIGHT):

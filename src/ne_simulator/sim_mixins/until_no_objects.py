@@ -9,9 +9,9 @@ class UntilNoObjects():
        for the simulation to continue running.
     """
 
-    def __init__(self, configuration):
+    def __init__(self, configuration, state):
         self._until_objects = configuration.get("until_no_objects", None)
-        super().__init__(configuration)
+        super().__init__(configuration, state)
 
     def should_run(self):
         if not self._until_objects:
