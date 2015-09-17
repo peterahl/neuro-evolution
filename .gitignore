@@ -1,3 +1,4 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 
@@ -55,13 +56,11 @@ docs/_build/
 # PyBuilder
 target/
 
-# Python environment
-.pyenv
-
 # PyCharm
 .idea/
 
-# Eclipse
-.project
-.pydevproject
-.settings/
+# ipython
+.ipynb_checkpoints/
+
+# Dropbox
+.dropbox
