@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+from importlib import import_module
+from multiprocessing import Process, Queue as ProcessQueue  # @UnresolvedImport
 from queue import Queue
 from threading import Thread
-from importlib import import_module
 
 
 EVOLUTION_CLASS = "evolution_class"
@@ -45,20 +46,33 @@ class Evolution():
         """ Return should_continue and new states. """
         return False, None
 
-    def _run_one_generation(self, simulator_class, configuration):
-        """ Spawn as many threads as there are states, run the simulators in
-        parallel, read the new state and wait for the threads to finish.
-        """
+    def _gen_threads(self, simulator_class, configuration):
         queues = [Queue() for _ in range(len(self._simulation_states))]
-        simulator_threads = [
+        simulators = [
             Thread(
                 target=_run_simulation,
                 args=(queue, simulator_class, configuration, state))
             for queue, state in zip(queues, self._simulation_states)]
-        for t in simulator_threads:
+        return queues, simulators
+
+    def _gen_processes(self, simulator_class, configuration):
+        queues = [ProcessQueue() for _ in range(len(self._simulation_states))]
+        simulators = [
+            Process(
+                target=_run_simulation,
+                args=(queue, simulator_class, configuration, state))
+            for queue, state in zip(queues, self._simulation_states)]
+        return queues, simulators
+
+    def _run_one_generation(self, simulator_class, configuration):
+        """ Spawn as many threads as there are states, run the simulators in
+        parallel, read the new state and wait for the threads to finish.
+        """
+        queues, simulators = self._gen_threads(simulator_class, configuration)
+        for t in simulators:
             t.start()
         self._simulation_states = [q.get() for q in queues]
-        for t in simulator_threads:
+        for t in simulators:
             t.join()
 
     def run(self):

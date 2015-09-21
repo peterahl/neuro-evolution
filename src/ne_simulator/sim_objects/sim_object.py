@@ -34,6 +34,8 @@ class SimObject():
 
         EAT = 4
 
+        DO_NOTHING = None
+
     @property
     def symbol(self):
         return self.SYMBOL

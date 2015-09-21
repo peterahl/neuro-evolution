@@ -7,15 +7,13 @@ from .food import Food
 from .sim_object import SimObject
 
 
-_ADD_RANDOM_WRONG_ACTION = "action_error"
-
 # Initial action probabilities.
 _ACTION_PROBABILLITIES = {
     SimObject.Action.EAT: 0.5,
     SimObject.Action.MOVE: 0.5,
     SimObject.Action.TURN_LEFT: 0.5,
     SimObject.Action.TURN_RIGHT: 0.5,
-    _ADD_RANDOM_WRONG_ACTION: 0.5,
+    SimObject.Action.DO_NOTHING: 0.5,
 }
 
 _PROBABILITIES_ORDERING = (
@@ -23,7 +21,7 @@ _PROBABILITIES_ORDERING = (
     SimObject.Action.MOVE,
     SimObject.Action.TURN_LEFT,
     SimObject.Action.TURN_RIGHT,
-    _ADD_RANDOM_WRONG_ACTION,
+    SimObject.Action.DO_NOTHING,
 )
 
 _POSSIBLE_ACTIONS = set([
@@ -43,11 +41,24 @@ def _is_empty(obj):
 
 
 def state_to_list(state):
-    return [state[p] for p in _PROBABILITIES_ORDERING]
+    """
+    :param state: containing the actual values not Action objects.
+    :type state: {int: float}
+    :return: ordered propability values
+    :rtype: [float]
+    """
+    return [state[action.value] for action in _PROBABILITIES_ORDERING]
 
 
 def list_to_state(probabilities):
-    return {k: v for k, v in zip(_PROBABILITIES_ORDERING, probabilities)}
+    """
+    :param probabilities: [float]
+    :return: added names to the probabilities (Action values)
+    :rtype: {int: float}
+    """
+    return {
+        action.value: probability
+        for action, probability in zip(_PROBABILITIES_ORDERING, probabilities)}
 
 
 class RandomAgent(SimObject):
@@ -77,8 +88,15 @@ class RandomAgent(SimObject):
                 k: v + random() * 0.3 - 0.15
                 for k, v in _ACTION_PROBABILLITIES.items()
             }
+        else:
+            # Convert values back into Action objects.
+            agent_state = {
+                self.Action(action_value): v
+                for action_value, v in agent_state.items()}
         self._probabilities = agent_state
-        self._state[self.STATE_KEY] = self._probabilities
+        # Set the state, taking care to save values not Action objects!
+        self._state[self.STATE_KEY] = {
+            action.value: v for action, v in self._probabilities.items()}
         self._state[self.SCORE_KEY] = 0
         self._last_position = None
 
@@ -136,7 +154,7 @@ class RandomAgent(SimObject):
                 a for a in actions if random() < _ACTION_PROBABILLITIES[a]]
 
             # Add random impossible action.
-            if random() < self._probabilities[_ADD_RANDOM_WRONG_ACTION]:
+            if random() < self._probabilities[self.Action.DO_NOTHING]:
                 wrong_actions = _POSSIBLE_ACTIONS - set(actions)
                 if wrong_actions:
                     actions.append(choice(list(wrong_actions)))
