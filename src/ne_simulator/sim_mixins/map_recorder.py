@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from .base import SimBase
 
 
-class MapRecorder(SimBase):
+class MapRecorder():
     """ Save each map to memory.
 
     Configuration:
@@ -13,9 +12,9 @@ class MapRecorder(SimBase):
     [["###", "# #", "###"]]
     """
 
-    def __init__(self, configuration):
+    def __init__(self, configuration, state):
         self._maps = []
-        super().__init__(configuration)
+        super().__init__(configuration, state)
 
     @property
     def maps(self):

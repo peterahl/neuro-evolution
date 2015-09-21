@@ -11,8 +11,8 @@ class _MoveAgent(SimObject):
 
     _instance = None
 
-    def __init__(self, directions, *args, **kwds):
-        super().__init__(*args, **kwds)
+    def __init__(self, state, directions, *args, **kwds):
+        super().__init__(state, *args, **kwds)
         _MoveAgent._instance = self
         self._directions = directions
         self._direction = None
@@ -68,7 +68,7 @@ class ActionMoveTest(TestCase):
             "parameters": {(0, 0): ([[Direction.NORTH]], {})},
             "steps_limiter_steps": 1
         }
-        sim = RecorderSimulator(configuration)
+        sim = RecorderSimulator(configuration, {})
         sim.run()
         agent = _MoveAgent._instance
         self.assertIsNotNone(agent)
@@ -87,7 +87,7 @@ class ActionMoveTest(TestCase):
             "parameters": {(0, 1): ([nesw], {})},
             "steps_limiter_steps": 4
         }
-        sim = RecorderSimulator(configuration)
+        sim = RecorderSimulator(configuration, {})
         sim.run()
         self.assertEqual(
             sim.maps,

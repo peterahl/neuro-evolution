@@ -9,8 +9,8 @@ from ne_simulator_test.utils import RecorderSimulator
 class _ActionAgent(SimObject):
     """ Direction aware test agent that performs the given actions. """
 
-    def __init__(self, direction, actions, *args, **kwds):
-        super().__init__(*args, **kwds)
+    def __init__(self, state, direction, actions, *args, **kwds):
+        super().__init__(state, *args, **kwds)
         self._direction = direction
         self._actions = actions
 
@@ -49,7 +49,7 @@ class ActionTurnTest(TestCase):
             "parameters": {(1, 1): ([Direction.NORTH, actions], {})},
             "steps_limiter_steps": 4
         }
-        sim = RecorderSimulator(configuration)
+        sim = RecorderSimulator(configuration, {})
         sim.run()
         self.assertEqual(
             sim.maps,

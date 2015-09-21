@@ -4,6 +4,7 @@ from ne_simulator.sim_mixins.map_printer import MapPrinter
 from ne_simulator.simulator import Simulator
 from ne_simulator.sim_mixins import UntilNoObjects
 from ne_simulator.sim_objects.random_agent import RandomAgent
+from ne_simulator.sim_objects.food import Food
 
 
 def _print_step_count(sim):
@@ -29,10 +30,10 @@ def main():
             "#+      #",
             "#########",
         ],
-        "until_no_objects": (RandomAgent),
+        "until_no_objects": (RandomAgent, Food),
         "map_printer_delimiter": _print_step_count,
     }
-    Sim(configuration).run()
+    Sim(configuration, {}).run()
 
 if __name__ == '__main__':
     main()

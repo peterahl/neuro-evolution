@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from .base import SimBase
 
 
-class StepsLimiter(SimBase):
+class StepsLimiter():
     """ Limit the amount of steps that the simulation runs.
 
     Configuration:
@@ -10,9 +9,9 @@ class StepsLimiter(SimBase):
          to 0.
     """
 
-    def __init__(self, configuration):
+    def __init__(self, configuration, state):
         self._steps = configuration.get("steps_limiter_steps", 0)
-        super().__init__(configuration)
+        super().__init__(configuration, state)
 
     def should_run(self):
         self._steps -= 1
