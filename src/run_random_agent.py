@@ -33,7 +33,7 @@ def main():
         "until_no_objects": (RandomAgent, Food),
         "map_printer_delimiter": _print_step_count,
     }
-    Sim(configuration).run()
+    Sim(configuration, {}).run()
 
 if __name__ == '__main__':
     main()
