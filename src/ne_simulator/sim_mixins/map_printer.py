@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from inspect import isfunction
-
+from subprocess import call
 from .base import SimBase
-
+from time import sleep
 
 class MapPrinter(SimBase):
     """ Print each map.
@@ -22,6 +22,8 @@ class MapPrinter(SimBase):
 
     def record_map(self):
         super().record_map()
+        sleep(0.05)
+        call(['clear'])
         print("\n".join(self._map.get_map_lines()))
         delimiter = self._printer_delimiter
         if isfunction(delimiter):
