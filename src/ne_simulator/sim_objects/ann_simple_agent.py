@@ -23,6 +23,7 @@ _OUTPUT_INDEX_TO_ACTION = {
     4: SimObject.Action.DO_NOTHING
 }
 
+
 def _max_index(input_vector):
     max_value = 0
     max_index = 0
