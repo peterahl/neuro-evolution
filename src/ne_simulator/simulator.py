@@ -68,8 +68,10 @@ class Simulator(SimBase):
     def run(self):
         # TODO: life energy?
         self.record_map()
+   
+  #      print(self._map._map)
         while self.should_run():
-            for o in self._map:
+            for o in self._map:         
                 o.start_turn(self._map)
             for o in self._map:
                 o.wait_until_ready()
