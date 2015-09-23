@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from random import choice, random
 
-from ..position import directions, turn
+from ..position import directions
 from .empty import Empty
 from .food import Food
 from .sim_object import SimObject
+from .sim_agent import SimAgent
 
 
 # Initial action probabilities.
@@ -32,36 +33,31 @@ _POSSIBLE_ACTIONS = set([
 ])
 
 
-def _is_food(obj):
-    return getattr(obj, 'SYMBOL', None) == Food.SYMBOL
+def _probs_from_context(ctx_probabilities):
+    """ Convert context probabilities into agent probabilities.
 
-
-def _is_empty(obj):
-    return getattr(obj, 'SYMBOL', None) == Empty.SYMBOL
-
-
-def state_to_list(state):
+    :param ctx_probabilities: containing the actual values not Action objects.
+    :type state: [float]
+    :return: probabilities index with Action
+    :rtype: {SimObject.Action: float}
     """
-    :param state: containing the actual values not Action objects.
-    :type state: {int: float}
-    :return: ordered propability values
+    action_probabilities = zip(_PROBABILITIES_ORDERING, ctx_probabilities)
+    return {
+        action: probability
+        for action, probability in action_probabilities}
+
+
+def _probs_to_context(probabilities):
+    """ Convert agent probabilities into context probabilities.
+
+    :param probabilities: {SimObject.Action: float}
+    :return: ordered probabilities as list
     :rtype: [float]
     """
-    return [state[action.value] for action in _PROBABILITIES_ORDERING]
+    return [probabilities[action] for action in _PROBABILITIES_ORDERING]
 
 
-def list_to_state(probabilities):
-    """
-    :param probabilities: [float]
-    :return: added names to the probabilities (Action values)
-    :rtype: {int: float}
-    """
-    return {
-        action.value: probability
-        for action, probability in zip(_PROBABILITIES_ORDERING, probabilities)}
-
-
-class RandomAgent(SimObject):
+class RandomAgent(SimAgent):
     """ Randomly choose one of the possible actions each turn.
 
     The agent has a limited life time (100 turns). It can eat food (10 turns
@@ -70,100 +66,52 @@ class RandomAgent(SimObject):
     The score is measured in move actions plus eat actions.
     """
 
-    SYMBOL = 'r'
-
-    STATE_KEY = "random_agent"
-
-    SCORE_KEY = "score"
+    PROBABILITIES_KEY = "probabilities"
 
     def __init__(self, state, *args, **kwds):
         super().__init__(state, *args, **kwds)
-        self._state = state
         self._energy = 10.0
-        self._direction = choice(directions)
-        self._possible_actions = []
-        agent_state = self._state.get(self.STATE_KEY)
-        if agent_state is None:
-            agent_state = {
+        self._monitor['_direction'] = choice(directions)
+        probabilities = self._ctx.get(self.PROBABILITIES_KEY)
+        if probabilities is None:
+            probabilities = {
                 k: v + random() * 0.3 - 0.15
                 for k, v in _ACTION_PROBABILLITIES.items()
             }
+            # Set the state, taking care to save values not Action objects!
+            self._ctx[self.PROBABILITIES_KEY] = _probs_to_context(
+                probabilities)
         else:
-            # Convert values back into Action objects.
-            agent_state = {
-                self.Action(action_value): v
-                for action_value, v in agent_state.items()}
-        self._probabilities = agent_state
-        # Set the state, taking care to save values not Action objects!
-        self._state[self.STATE_KEY] = {
-            action.value: v for action, v in self._probabilities.items()}
-        self._state[self.SCORE_KEY] = 0
-        self._last_position = None
-
-    @property
-    def direction(self):
-        return self._direction
-
-    def set_direction(self, direction):
-        super().set_direction(direction)
-        self._direction = direction
-
-    def add_energy(self, energy):
-        super().add_energy(energy)
-        self._energy += energy
-        self._state[self.SCORE_KEY] += 1
+            probabilities = _probs_from_context(probabilities)
+        self._probabilities = probabilities
 
     def start_turn(self, objects_map):
         """
         :type objects_map: ObjectsMap
         """
+        super().start_turn(objects_map)
         # Reduce energy.
         self._energy -= 0.1
         if self._energy <= 0.0001:
             actions = [self.Action.DIE]
         else:
-            # Get action, improve and set score.
-            position = objects_map.get_position_for_object(self)
-            if (self._last_position is not None and
-                    position != self._last_position):
-                self._state[self.SCORE_KEY] += 1
-            self._last_position = position
+            visible = self.get_visible(objects_map)
 
-            # What is visible to the agent?
-            front = objects_map.get_object_for_position(
-                position.move(self._direction))
-            left = objects_map.get_object_for_position(
-                position.move(turn(self._direction, False)))
-            right = objects_map.get_object_for_position(
-                position.move(turn(self._direction, True)))
-
-            visible = (front, left, right)
-
-            # What could the agent do?
+            # What could the agent do? Nothing or turn are always possible.
             actions = [
+                self.Action.DO_NOTHING,
                 self.Action.TURN_LEFT
                 if random() >= 0.5 else self.Action.TURN_RIGHT]
 
-            if any(map(_is_food, visible)):
+            if any(map(Food.is_me, visible)):
                 actions.append(self.Action.EAT)
-            if any(map(_is_empty, visible)):
+            if any(map(Empty.is_me, visible)):
                 actions.append(self.Action.MOVE)
 
             # Make probability check for each action.
             actions = [
-                a for a in actions if random() < _ACTION_PROBABILLITIES[a]]
-
-            # Add random impossible action.
-            if random() < self._probabilities[self.Action.DO_NOTHING]:
-                wrong_actions = _POSSIBLE_ACTIONS - set(actions)
-                if wrong_actions:
-                    actions.append(choice(list(wrong_actions)))
-        self._possible_actions = actions
-
-    def action(self):
-        if self._possible_actions:
-            return choice(self._possible_actions)
-        return None
-
+                a for a in actions if random() < self._probabilities[a]]
+        # Choose what to do.
+        self._action = choice(actions) if actions else self.Action.DO_NOTHING
 
 RandomAgent.register()
