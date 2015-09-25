@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-from importlib import import_module
 from multiprocessing import Process, Queue as ProcessQueue  # @UnresolvedImport
 from queue import Queue
 from threading import Thread
+
+from .import_util import import_obj
 
 
 EVOLUTION_CLASS = "evolution_class"
@@ -16,19 +17,21 @@ SIMULATOR_CONFIGURATION = "configuration"
 SIMULATIONS_COUNT = "simulations_count"
 
 
-def _import_obj(object_from_package):
-    elements = object_from_package.split('.')
-    if len(elements) < 2:
-        raise RuntimeError(
-            'Can not auto import {}'.format(object_from_package))
-    obj = elements[-1]
-    package = ".".join(elements[:-1])
-    return getattr(import_module(package), obj)
-
-
 def _run_simulation(queue, simulator_class, configuration, state):
     # Run and put resulting state information into queue.
     queue.put(simulator_class(configuration, state).run())
+
+
+def _build_class(class_name, classes):
+    """ Import all classes from the parameter and then build a new class with
+    the given name.
+
+    :param class_name: the name for the new class
+    :param classes: one ore more Classes to build the new class out of
+    """
+    if not isinstance(classes, (list, tuple)):
+        classes = (classes, )
+    return type(class_name, tuple(import_obj(c) for c in classes), {})
 
 
 class Evolution():
@@ -93,7 +96,9 @@ class Evolution():
         """
         for scenario in self._scenarios:
             self.scenario_start()
-            simulator_class = _import_obj(scenario[SIMULATOR_CLASS])
+            simulator_class = _build_class(
+                self.__class__.__name__ + "Simulator",
+                scenario[SIMULATOR_CLASS])
             simulator_configuration = scenario[SIMULATOR_CONFIGURATION]
             should_continue = None
             while should_continue is None or should_continue:
@@ -104,7 +109,7 @@ class Evolution():
 
     @staticmethod
     def get_instance(configuration):
-        return _import_obj(configuration[EVOLUTION_CLASS])(
+        return import_obj(configuration[EVOLUTION_CLASS])(
             configuration[SCENARIOS], configuration[SIMULATIONS_COUNT])
 
 

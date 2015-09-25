@@ -68,13 +68,12 @@ class Simulator():
             self._eat(o)
 
     def run(self):
-        # TODO: life energy?
         self.record_map()
         while self.should_run():
-            for o in self._map:
+            for o in self._map:  # _map does not get changed, iterate
                 o.start_turn(self._map)
-            for o in self._map:
-                o.wait_until_ready()
+            # Perform an action for each object. Do not iterate _map for that,
+            # since it might get changed by an action during iteration!
             objects = [o for o in self._map]
             for o in objects:
                 self.perform_action(o)

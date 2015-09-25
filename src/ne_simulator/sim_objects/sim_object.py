@@ -68,9 +68,6 @@ class SimObject():
         """
         pass
 
-    def wait_until_ready(self):
-        pass
-
     def action(self):
         """ Simulation moves one tick forward, perform action and read inputs
         for next action.
@@ -78,6 +75,10 @@ class SimObject():
         Do not forget to update the simulation state, if necessary!
         """
         return None
+
+    @classmethod
+    def is_me(cls, obj):
+        return getattr(obj, 'SYMBOL', None) == cls.SYMBOL
 
     @classmethod
     def register(cls):
