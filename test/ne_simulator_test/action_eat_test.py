@@ -46,7 +46,7 @@ class ActionTurnTest(TestCase):
             "map": ["+", "T"],
             "steps_limiter_steps": 2
         }
-        sim = RecorderSimulator(configuration)
+        sim = RecorderSimulator(configuration, {})
         agent = _EatAgent._instance
         sim.run()
         self.assertAlmostEqual(agent.energy, 1.0, delta=0.0001)

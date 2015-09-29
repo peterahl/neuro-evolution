@@ -56,6 +56,9 @@ docs/_build/
 # PyBuilder
 target/
 
+# Python virtual environment
+.pyenv/
+
 # PyCharm
 .idea/
 
@@ -64,3 +67,11 @@ target/
 
 # Dropbox
 .dropbox
+
+# Eclipse
+.project
+.pydevproject
+.settings/
+
+peters-notebook.ipynb
+

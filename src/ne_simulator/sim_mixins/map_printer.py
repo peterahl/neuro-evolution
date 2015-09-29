@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from inspect import isfunction
 from subprocess import call
-from .base import SimBase
 from time import sleep
 
-class MapPrinter(SimBase):
+
+class MapPrinter():
     """ Print each map.
 
     Configuration:
@@ -15,10 +15,10 @@ class MapPrinter(SimBase):
     This allows for example to print: "-" * self._width
     """
 
-    def __init__(self, configuration):
-        super().__init__(configuration)
+    def __init__(self, configuration, state):
         self._printer_delimiter = configuration.get(
             "map_printer_delimiter", "")
+        super().__init__(configuration, state)
 
     def record_map(self):
         super().record_map()

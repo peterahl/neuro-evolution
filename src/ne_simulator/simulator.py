@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 from .objects_map import ObjectsMap
 from .position import turn
-from .sim_mixins.base import SimBase
 from .sim_objects import SimObject, Empty
 
 
-class Simulator(SimBase):
+class Simulator():
 
-    def __init__(self, configuration):
-        self._map = ObjectsMap(configuration)
+    def __init__(self, configuration, state):
+        super().__init__()
+        self._map = ObjectsMap(configuration, state)
         self._step_count = 0
-        super().__init__(configuration)
+        self._state = state
 
     def should_run(self):
         return False
@@ -57,7 +57,9 @@ class Simulator(SimBase):
         Action = SimObject.Action  # shortcut
         action = o.action()
         if action == Action.DIE:
-            self._map.set_object(Empty(), self._map.get_position_for_object(o))
+            self._map.set_object(
+                SimObject.from_symbol(Empty.SYMBOL, self._state),
+                self._map.get_position_for_object(o))
         if action == Action.MOVE:
             self._move_object(o)
         if action in (Action.TURN_LEFT, Action.TURN_RIGHT):
@@ -66,17 +68,17 @@ class Simulator(SimBase):
             self._eat(o)
 
     def run(self):
-        # TODO: life energy?
         self.record_map()
-   
-  #      print(self._map._map)
+
+        # print(self._map._map)
         while self.should_run():
-            for o in self._map:         
+            for o in self._map:  # _map does not get changed, iterate
                 o.start_turn(self._map)
-            for o in self._map:
-                o.wait_until_ready()
+            # Perform an action for each object. Do not iterate _map for that,
+            # since it might get changed by an action during iteration!
             objects = [o for o in self._map]
             for o in objects:
                 self.perform_action(o)
             self._step_count += 1
             self.record_map()
+        return self._state
