@@ -71,7 +71,7 @@ class Evolution():
         """ Spawn as many threads as there are states, run the simulators in
         parallel, read the new state and wait for the threads to finish.
         """
-        queues, simulators = self._gen_threads(simulator_class, configuration)
+        queues, simulators = self._gen_processes(simulator_class, configuration)
         for t in simulators:
             t.start()
         self._simulation_states = [q.get() for q in queues]

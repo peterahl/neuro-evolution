@@ -57,6 +57,8 @@ def _energy_conversion(energy):
 
 class ANNSimpleAgent(SimAgent):
 
+    WEIGHTS_KEY = 'weights'
+
     def __init__(self, context, *args, **kwds):
         super().__init__(context, *args, **kwds)
         self._n_layers = kwds.get('n_layers', 3)
@@ -67,25 +69,32 @@ class ANNSimpleAgent(SimAgent):
         self._node_values = np.array([0]*self._n_nodes)
         self._energy = _MAX_ENERGY
         self._binary_input = [0, ] * _NUMBER_OF_INPUTS
-        # TODO: self._ctx.get('weights')
-        self.set_random_weights_three_layer_network()
+        weights = self._ctx.get(self.WEIGHTS_KEY)
+        if weights is not None:
+            weights = np.array(weights)
+        else:
+            weights = self.set_random_weights_three_layer_network()
+            self._ctx[self.WEIGHTS_KEY] = [list(w) for w in weights]
+        self._weights = weights
 
     def set_random_weights_three_layer_network(self):
         """ just something simple to create a weight matrix
             for a three layer network"""
 
         n_nodes = self._n_inputs + self._n_outputs + self._n_middle
-        self._weights = np.zeros([n_nodes, n_nodes])
+        weights = np.zeros([n_nodes, n_nodes])
         nodes = list(range(n_nodes))
         layer1 = nodes[:self._n_inputs]
         layer2 = nodes[self._n_inputs:self._n_inputs + self._n_middle]
         layer3 = nodes[-self._n_outputs:]
 
-        _connect_all_to_all(layer1, layer2, self._weights)
-        _connect_all_to_all(layer2, layer3, self._weights)
+        _connect_all_to_all(layer1, layer2, weights)
+        _connect_all_to_all(layer2, layer3, weights)
 
         # print("--------WEIGHT MATRIX--------------")
         # print(self._weights)
+        
+        return weights
 
     def start_turn(self, objects_map):
         super().start_turn(objects_map)
@@ -111,8 +120,9 @@ class ANNSimpleAgent(SimAgent):
 
             """convert from binary to correct output format"""
             output = self._get_outputs()
+            # print(output)
             ind = _max_index(output)
-            print("Max output index", _OUTPUT_INDEX_TO_ACTION[ind])
+            # print("Max output index", _OUTPUT_INDEX_TO_ACTION[ind])
             self._action = _OUTPUT_INDEX_TO_ACTION[ind]
 
     def _set_inputs(self, values):
