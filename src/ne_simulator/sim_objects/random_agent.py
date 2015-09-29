@@ -91,7 +91,7 @@ class RandomAgent(SimAgent):
         """
         super().start_turn(objects_map)
         # Reduce energy.
-        self._energy -= 0.1
+        self._energy -= 0.1  # do not tell the monitor
         if self._energy <= 0.0001:
             actions = [self.Action.DIE]
         else:
