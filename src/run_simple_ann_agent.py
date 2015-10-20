@@ -20,11 +20,11 @@ def main():
     class Sim(StepsLimiter, MapPrinter, Simulator):
         pass
 
-    with open('configurations/random_agent.json') as jfile:
+    with open('configurations/minimap.json') as jfile:
         configuration = json.load(jfile)
 
     configuration["map_printer_delimiter"] = _print_step_count
-    configuration["steps_limiter_steps"] = 100
+    configuration["steps_limiter_steps"] = 10
     configuration["parameters"] = {(2, 3): ([], {})}
     Sim(configuration, {}).run()
 
