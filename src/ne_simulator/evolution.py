@@ -3,14 +3,10 @@ from multiprocessing import Process, Queue as ProcessQueue  # @UnresolvedImport
 from queue import Queue
 from threading import Thread
 
-from .import_util import import_obj
-
-
-EVOLUTION_CLASS = "evolution_class"
-
-SCENARIOS = "scenarios"
 
 SIMULATOR_CLASS = "simulator_class"
+
+SCENARIOS = "scenarios"
 
 SIMULATOR_CONFIGURATION = "configuration"
 
@@ -22,22 +18,9 @@ def _run_simulation(queue, simulator_class, configuration, state):
     queue.put(simulator_class(configuration, state).run())
 
 
-def _build_class(class_name, classes):
-    """ Import all classes from the parameter and then build a new class with
-    the given name.
-
-    :param class_name: the name for the new class
-    :param classes: one ore more Classes to build the new class out of
-    """
-    if not isinstance(classes, (list, tuple)):
-        classes = (classes, )
-    return type(class_name, tuple(import_obj(c) for c in classes), {})
-
-
 class Evolution():
 
-    def __init__(self, scenarios, simulators_count):
-        super().__init__()
+    def __init__(self, scenarios, simulators_count, **kwds):
         self._scenarios = scenarios
         self._simulation_states = [{} for _ in range(simulators_count)]
 
@@ -71,7 +54,8 @@ class Evolution():
         """ Spawn as many threads as there are states, run the simulators in
         parallel, read the new state and wait for the threads to finish.
         """
-        queues, simulators = self._gen_processes(simulator_class, configuration)
+        queues, simulators = self._gen_processes(
+            simulator_class, configuration)
         for t in simulators:
             t.start()
         self._simulation_states = [q.get() for q in queues]
@@ -96,22 +80,13 @@ class Evolution():
         """
         for scenario in self._scenarios:
             self.scenario_start()
-            simulator_class = _build_class(
-                self.__class__.__name__ + "Simulator",
-                scenario[SIMULATOR_CLASS])
-            simulator_configuration = scenario[SIMULATOR_CONFIGURATION]
             should_continue = None
             while should_continue is None or should_continue:
                 self._run_one_generation(
-                    simulator_class, simulator_configuration)
+                    scenario[SIMULATOR_CLASS],
+                    scenario[SIMULATOR_CONFIGURATION])
                 should_continue, self._simulation_states = self.evolve(
                     self._simulation_states)
-
-    @staticmethod
-    def get_instance(configuration):
-        return import_obj(configuration[EVOLUTION_CLASS])(
-            configuration[SCENARIOS], configuration[SIMULATIONS_COUNT])
-
 
 # TODO: add a function to show off the best agent?
 # TODO: add a player for showing recorded maps (agent behavior)

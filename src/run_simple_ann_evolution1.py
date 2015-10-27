@@ -17,9 +17,9 @@ def main():
         (24, 13): (
             [],
             {'score_monitor_class':
-			    'ne_simulator.experiments.simple_ann_evolution1.monitor.Monitor'})}
+                'ne_simulator.experiments.simple_ann_evolution1.monitor.Monitor'})}
     scenario["steps_limiter_steps"] = 100
-    configuration =  {
+    configuration = {
         EVOLUTION_CLASS: "ne_simulator.experiments.simple_ann_evolution1.evolution.Evolution",
         SIMULATIONS_COUNT: _SIMULATION_COUNTS,
         SCENARIOS: [{

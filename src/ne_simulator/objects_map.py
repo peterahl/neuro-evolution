@@ -5,6 +5,13 @@ from .position import Position
 from .sim_objects.sim_object import SimObject
 
 
+CONFIGURATION_MAP = "map"
+
+CONFIGURATION_PARAMETERS = "parameters"
+
+_MAP_VARIABLE = "MAP"
+
+
 class MapDimensionMismatch(Exception):
     pass
 
@@ -14,19 +21,19 @@ class ObjectsMap():
     def __init__(self, configuration, state):
         """
         {
-          # ASCII representation of map as array of strings
-          map: ["######", "#  # #", "#  # #", "######"],
+          # ASCII representation of map as a strings
+          map: "######\n#  # #\n#  # #\n######",
 
           # tuple of *args, **kwds
           parameters: {(0, 0): (["argument"], {"key": "value"})}
 
         }
         """
-        objects_map = configuration["map"]  # shortcut
-        params = configuration.get("parameters", {})  # shortcut
+        params = configuration.get(CONFIGURATION_PARAMETERS, {})  # shortcut
 
         # Create internal map representation containing objects at their
         # respective (x,y) positions
+        objects_map = self.get_map(configuration)
         self._map = list(
             chain.from_iterable(
                 [
@@ -84,3 +91,9 @@ class ObjectsMap():
     def set_object(self, o, p):
         self._map[self._index_for_position(p)] = o
         self._positions[o] = p
+
+    @staticmethod
+    def get_map(configuration):
+        objects_map = configuration[CONFIGURATION_MAP]  # shortcut
+        objects_map = getattr(objects_map, _MAP_VARIABLE)
+        return [l for l in objects_map.split("\n") if l]

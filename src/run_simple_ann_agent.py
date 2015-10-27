@@ -24,7 +24,7 @@ def main():
         configuration = json.load(jfile)
 
     configuration["map_printer_delimiter"] = _print_step_count
-    configuration["steps_limiter_steps"] = 10
+    configuration["steps_limiter_steps"] = 200
     configuration["parameters"] = {(2, 3): ([], {})}
     Sim(configuration, {}).run()
 
