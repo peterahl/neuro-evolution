@@ -31,14 +31,14 @@ class SimAgent(SimObject):
         TODO: add initial energy and score to the configuration?
 
         Configuration: (kwds)
-        - context_suffix: [string] adds to CONTEXT_KEY_PREFIX before accessing
+        - context_prefix: [string] adds to CONTEXT_KEY_PREFIX before accessing
             the simulation context (where to store the context of the agent)
         - initial_direction: [Direction] value for _direction, default is NORTH
         - score_monitor_class: [ScoreMonitor] a ScoreMonitor derived class that
             can calculate the agents score
         """
         super().__init__(context, *args, **kwds)
-        ctx_key = self.CONTEXT_KEY_PREFIX + kwds.get("context_suffix", "")
+        ctx_key = self.CONTEXT_KEY_PREFIX + kwds.get("context_prefix", "")
         ctx = context.get(ctx_key)
         if ctx is None:
             ctx = context[ctx_key] = {}

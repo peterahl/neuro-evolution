@@ -69,6 +69,8 @@ class Simulator():
 
     def run(self):
         self.record_map()
+
+        # print(self._map._map)
         while self.should_run():
             for o in self._map:  # _map does not get changed, iterate
                 o.start_turn(self._map)

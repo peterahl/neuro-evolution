@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 import json
 
-from ne_simulator.sim_mixins import UntilNoObjects
+from ne_simulator.sim_mixins import StepsLimiter
 from ne_simulator.sim_mixins.map_printer import MapPrinter
-from ne_simulator.sim_objects.random_agent import RandomAgent
+from ne_simulator.sim_objects.ann_simple_agent import \
+    ANNSimpleAgent  # @UnusedImport
 from ne_simulator.simulator import Simulator
 
 
@@ -16,13 +17,15 @@ def _print_step_count(sim):
 
 
 def main():
-    class Sim(UntilNoObjects, MapPrinter, Simulator):
+    class Sim(StepsLimiter, MapPrinter, Simulator):
         pass
+
     with open('configurations/random_agent.json') as jfile:
         configuration = json.load(jfile)
 
-    configuration["until_no_objects"] = (RandomAgent)
     configuration["map_printer_delimiter"] = _print_step_count
+    configuration["steps_limiter_steps"] = 100
+    configuration["parameters"] = {(2, 3): ([], {})}
     Sim(configuration, {}).run()
 
 if __name__ == '__main__':

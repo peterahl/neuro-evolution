@@ -1,3 +1,4 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 
@@ -55,20 +56,22 @@ docs/_build/
 # PyBuilder
 target/
 
-# Python environment
-.pyenv
+# Python virtual environment
+.pyenv/
 
 # PyCharm
 .idea/
+
+# ipython
+.ipynb_checkpoints/
+
+# Dropbox
+.dropbox
 
 # Eclipse
 .project
 .pydevproject
 .settings/
 
-# Dropbox
-.dropbox
-
-# ipyton notebook
-.ipynb_checkpoints/
 peters-notebook.ipynb
+

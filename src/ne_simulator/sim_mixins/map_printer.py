@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from inspect import isfunction
+from subprocess import call
+from time import sleep
 
 
 class MapPrinter():
@@ -20,6 +22,8 @@ class MapPrinter():
 
     def record_map(self):
         super().record_map()
+        sleep(0.05)
+        call(['clear'])
         print("\n".join(self._map.get_map_lines()))
         delimiter = self._printer_delimiter
         if isfunction(delimiter):
