@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
-from ..import_util import import_obj
 from ..position import Direction, turn
-from .score_monitor import ScoreMonitor
+from ..score_monitor import ScoreMonitor
 from .sim_object import SimObject
+
+
+SCORE_MONITOR = "monitor"  # used in the experiments configuration
+
+SCORE_MONITOR_PARAMETER = "score_monitor_class"
 
 
 class SimAgent(SimObject):
@@ -46,10 +50,7 @@ class SimAgent(SimObject):
         self._ctx[self.SCORE_KEY] = 0
         self._direction = kwds.get("initial_direction", Direction.NORTH)
         self._energy = 0
-        monitor_class = kwds.get("score_monitor_class")
-        monitor_class = (
-            import_obj(monitor_class)
-            if monitor_class is not None else ScoreMonitor)
+        monitor_class = kwds.get(SCORE_MONITOR_PARAMETER, ScoreMonitor)
         self._monitor = monitor_class(self)
         self._position = None
 

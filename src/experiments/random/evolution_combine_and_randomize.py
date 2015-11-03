@@ -1,22 +1,15 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from random import choice, random
-from sys import modules
-from types import ModuleType
+from random import random, choice
 
-from ne_simulator.evolution import SIMULATIONS_COUNT, Evolution, \
-    EVOLUTION_CLASS, SIMULATOR_CLASS, SIMULATOR_CONFIGURATION, SCENARIOS
-from ne_simulator.sim_objects import Food, ScoreMonitor
+from ne_simulator import Evolution as EvolutionBase
 from ne_simulator.sim_objects.random_agent import RandomAgent
 
 
-_SIMULATION_COUNTS = 6  # agents for a generation
-
-_PARENTS_FOR_NEXT_GENERATION = 3  # best agents
+_PARENTS_FOR_NEXT_GENERATION = 2  # best agents
 
 _RANDOMIZE_DELTA = 0.02
 
-_MAX_GENERATIONS = 100
+_MAX_GENERATIONS = 10
 
 
 def _randomize(value):
@@ -32,21 +25,10 @@ def _normalize(value):
     return value
 
 
-class MoveAndEatScoreMonitor(ScoreMonitor):
+class Evolution(EvolutionBase):
 
-    def calculate_score(self):
-        score = 0
-        if self.did_change('_energy'):
-            score += 1
-        if self.did_change('_position'):
-            score += 1
-        return score
-
-
-class RandomAgentEvolution(Evolution):
-
-    def __init__(self, scenarios, simulators_count):
-        super().__init__(scenarios, simulators_count)
+    def __init__(self, scenarios, simulators_count, **kwds):
+        super().__init__(scenarios, simulators_count, **kwds)
         self._generation_count = 0
 
     def scenario_start(self):
@@ -100,49 +82,3 @@ class RandomAgentEvolution(Evolution):
                         for i in range(params_count)]}}
                 for _ in simulations_contexts]
         return should_continue, new_states
-
-
-def main():
-    # Create and add module to be used by the run function.
-    main_module = ModuleType("main")
-    main_module.MoveAndEatScoreMonitor = MoveAndEatScoreMonitor
-    main_module.RandomAgentEvolution = RandomAgentEvolution
-    modules["main"] = main_module
-    # Build scenarios/configuration.
-    configuration = {
-        EVOLUTION_CLASS: "main.RandomAgentEvolution",
-        SIMULATIONS_COUNT: _SIMULATION_COUNTS,
-        SCENARIOS: [
-            {SIMULATOR_CLASS: (
-                    "ne_simulator.sim_mixins.until_no_objects.UntilNoObjects",
-                    "ne_simulator.simulator.Simulator"),
-                SIMULATOR_CONFIGURATION: {
-                    "map": [
-                        "#########",
-                        "#++     #",
-                        "#       #",
-                        "# a  ####",
-                        "#    ++ #",
-                        "#       #",
-                        "##     +#",
-                        "#+      #",
-                        "#########",
-                    ],
-                    "until_no_objects": (RandomAgent, Food),
-                    # TODO: move the score class into the simulator?
-                    "parameters": {
-                        (2, 3): (
-                            [],
-                            {"score_monitor_class":
-                                "main.MoveAndEatScoreMonitor"})
-                    }
-                },
-            },  # @IgnorePep8
-        ],
-    }
-    # Run it.
-    Evolution.get_instance(configuration).run()
-
-
-if __name__ == '__main__':
-    main()

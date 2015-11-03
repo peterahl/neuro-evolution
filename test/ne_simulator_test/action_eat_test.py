@@ -28,6 +28,11 @@ class _EatAgent(SimObject):
         return self.Action.EAT
 
 
+class _MapContainer():
+
+    MAP = None
+
+
 class ActionTurnTest(TestCase):
 
     def setUp(self):
@@ -42,8 +47,9 @@ class ActionTurnTest(TestCase):
         """ Try to eat one food, check that the energy has been transfered and
         that the food is removed from the map.
         """
+        _MapContainer.MAP = "+\nT"  # \n means new row (new line)
         configuration = {
-            "map": ["+", "T"],
+            "map": _MapContainer,
             "steps_limiter_steps": 2
         }
         sim = RecorderSimulator(configuration, {})
