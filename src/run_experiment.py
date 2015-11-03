@@ -45,11 +45,18 @@ def _build_class(class_name, classes):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("experiment")
+    parser.add_argument(
+        "experiment",
+        help="Name of the experiment. The runner will look for it in "
+        "src/experiments.")
+    parser.add_argument(
+        "-c", "--configuration", type=str, default="default",
+        help="Specify the configuration to be used. It must exist as a "
+        "config_*** import within the experiment! Defaults to 'default'.")
     args = parser.parse_args()
     experiment = args.experiment
     # TODO: add configuration to argument parser above.
-    configuration = "default"
+    configuration = args.configuration
     # Import experiment package.
     experiment = import_module(_EXPERIMENTS_PACKAGE + "." + experiment)
     # TODO: use logging.
@@ -82,7 +89,7 @@ def main():
     # Get evolution class, create insance and run!
     evolution = getattr(configuration, _EVOLUTION_CONFIG, _EVOLUTION_DEFAULT)
     evolution = getattr(experiment, _EVOLUTION_PREFIX + evolution).Evolution(
-        scenarios, getattr(configuration, _SIMULATION_COUNTS_VARIABLE),
+        scenarios, getattr(configuration, _SIMULATION_COUNTS_VARIABLE, 1),
         **getattr(configuration, _EVOLUTION_KWDS_CONFIG, {}))
     evolution.run()
 

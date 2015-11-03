@@ -2,6 +2,7 @@
 from multiprocessing import Process, Queue as ProcessQueue  # @UnresolvedImport
 from queue import Queue
 from threading import Thread
+from sys import stdin
 
 
 SIMULATOR_CLASS = "simulator_class"
@@ -20,9 +21,14 @@ def _run_simulation(queue, simulator_class, configuration, state):
 
 class Evolution():
 
-    def __init__(self, scenarios, simulators_count, **kwds):
+    def __init__(
+            self, scenarios, simulators_count, wait_for_enter=False,
+            multiprocessing=False, **kwds):
+        if wait_for_enter:  # something is on the screen, wait for enter
+            stdin.readline()
         self._scenarios = scenarios
         self._simulation_states = [{} for _ in range(simulators_count)]
+        self._multiprocessing = multiprocessing
 
     def scenario_start(self):
         """ New scenario, reset any evolve state. """
@@ -54,8 +60,12 @@ class Evolution():
         """ Spawn as many threads as there are states, run the simulators in
         parallel, read the new state and wait for the threads to finish.
         """
-        queues, simulators = self._gen_processes(
-            simulator_class, configuration)
+        if self._multiprocessing:
+            queues, simulators = self._gen_processes(
+                simulator_class, configuration)
+        else:
+            queues, simulators = self._gen_threads(
+                simulator_class, configuration)
         for t in simulators:
             t.start()
         self._simulation_states = [q.get() for q in queues]
@@ -87,6 +97,13 @@ class Evolution():
                     scenario[SIMULATOR_CONFIGURATION])
                 should_continue, self._simulation_states = self.evolve(
                     self._simulation_states)
+
+
+class NoEvolution(Evolution):
+
+    def evolve(self, simulation_states):
+        return False, None
+
 
 # TODO: add a function to show off the best agent?
 # TODO: add a player for showing recorded maps (agent behavior)

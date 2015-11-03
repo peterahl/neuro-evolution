@@ -4,11 +4,11 @@ Evolution: create children by adding a small random number to non-zero weights.
 No crossing between agents.
 Scoring: 1 point for changing position, 3 points for eating.
 """
-from ne_simulator.evolution import SIMULATOR_CONFIGURATION, SIMULATOR_CLASS
+from ne_simulator import SIMULATOR_CONFIGURATION, SIMULATOR_CLASS,\
+    CONFIGURATION_MAP
 from ne_simulator.maps import food_9x9
-from ne_simulator.objects_map import CONFIGURATION_MAP
-# from ne_simulator.objects_map import CONFIGURATION_PARAMETERS
-# from ne_simulator.sim_objects.sim_agent import SCORE_MONITOR
+# from ne_simulator import CONFIGURATION_PARAMETERS
+# from ne_simulator import SCORE_MONITOR
 
 
 # EVOLUTION = "default"
