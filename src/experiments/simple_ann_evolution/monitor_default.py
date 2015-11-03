@@ -10,7 +10,7 @@ class Monitor(ScoreMonitor):
         last_energy = self._last.get('_energy')
         if (current_energy is not None and last_energy is not None and
                 current_energy > last_energy):
-            score += 3
+            score += 5
         if self.did_change('_position'):
             score += 1
         return score

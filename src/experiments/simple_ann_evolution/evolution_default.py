@@ -23,7 +23,7 @@ class Evolution(EvolutionBase):
 
     def __init__(
             self, scenarios, simulators_count, max_generations=10, **kwds):
-        super().__init__(scenarios, simulators_count)
+        super().__init__(scenarios, simulators_count, **kwds)
         self._generation_count = 0
         self._max_generations = max_generations
 
@@ -58,9 +58,9 @@ class Evolution(EvolutionBase):
             best_weights = [
                 c[WEIGHTS_KEY]
                 for c in agents_contexts[-len(agents_contexts) // 2:]]
-            print(*[
-                ' '.join(['%.3f' % x for x in row])
-                for row in best_weights[-1][-5:]], sep='\n')
+#             print(*[
+#                 ' '.join(['%.3f' % x for x in row])
+#                 for row in best_weights[-1][-5:]], sep='\n')
             new_weights = []
             for _ in range(len(simulations_contexts)):
                 weights = choice(best_weights)
