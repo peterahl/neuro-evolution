@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from .objects_map import ObjectsMap
 from .position import turn
-from .sim_objects import SimObject, Empty
+from .sim_objects import SimObject, Empty, Wall
 
 
 class Simulator():
@@ -11,6 +11,7 @@ class Simulator():
         self._map = ObjectsMap(configuration, state)
         self._step_count = 0
         self._state = state
+        self._action_objects = {}  # all objects exluding Wall and Empty
 
     def should_run(self):
         return False
@@ -28,7 +29,7 @@ class Simulator():
             other_object = self._map.get_object_for_position(new_position)
         except IndexError:
             other_object = None
-        if isinstance(other_object, Empty):
+        if Empty.is_me(other_object):
             self._map.set_object(o, new_position)
             self._map.set_object(other_object, position)
 
@@ -60,6 +61,7 @@ class Simulator():
             self._map.set_object(
                 SimObject.from_symbol(Empty.SYMBOL, self._state),
                 self._map.get_position_for_object(o))
+            self._action_objects.discard(o)
         if action == Action.MOVE:
             self._move_object(o)
         if action in (Action.TURN_LEFT, Action.TURN_RIGHT):
@@ -70,14 +72,15 @@ class Simulator():
     def run(self):
         self.record_map()
 
+        self._action_objects = {
+            o for o in self._map if not Empty.is_me(o) and not Wall.is_me(o)}
+
         # print(self._map._map)
         while self.should_run():
             for o in self._map:  # _map does not get changed, iterate
                 o.start_turn(self._map)
-            # Perform an action for each object. Do not iterate _map for that,
-            # since it might get changed by an action during iteration!
-            objects = [o for o in self._map]
-            for o in objects:
+            # Perform an action for each object.
+            for o in list(self._action_objects):
                 self.perform_action(o)
             self._step_count += 1
             self.record_map()

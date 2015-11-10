@@ -10,6 +10,11 @@ class _Sim(UntilNoObjects, Simulator):
     pass
 
 
+class _MapContainer():
+
+    MAP = None
+
+
 class RandomAgentTest(TestCase):
 
     def setUp(self):
@@ -28,18 +33,19 @@ class RandomAgentTest(TestCase):
         """ Let a random agent run loose and see if it survives at least as
         long as the initial energy suffices.
         """
+        _MapContainer.MAP = "\n".join([
+            "#########",
+            "#++     #",
+            "#       #",
+            "# a  ####",
+            "#    ++ #",
+            "#       #",
+            "##     +#",
+            "#+      #",
+            "#########",
+        ])
         configuration = {
-            "map": [
-                "#########",
-                "#++     #",
-                "#       #",
-                "# a  ####",
-                "#    ++ #",
-                "#       #",
-                "##     +#",
-                "#+      #",
-                "#########",
-            ],
+            "map": _MapContainer,
             "until_no_objects": RandomAgent,
         }
         sim = _Sim(configuration, {})
