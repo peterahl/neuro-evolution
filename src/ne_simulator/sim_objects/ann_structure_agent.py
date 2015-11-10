@@ -46,11 +46,8 @@ _N_INPUT_UNITS = 14
 
 _N_OUTPUT_UNITS = 5
 
-
 def _rand_range(rng):
     return random() * 2 * rng - rng
-
-
 
 def _create_initial_structure():
     """Create the inital randomized structure for the agent.
@@ -95,9 +92,6 @@ def _create_initial_structure():
 
     return structure
 
-
-
-
 def _node_index(nodes, to_layer):
     #print(to_layer)
     start = sum(nodes[:to_layer])
@@ -111,8 +105,7 @@ def _projections(out_degree=4.4, n_projecting_nodes=10):
     ph = 1 - pl
     return array(choice([low, high], n_projecting_nodes, p=[pl, ph]), dtype=int)
 
-
-def create_matrix(structure):
+def _create_matrix(structure):
     
     nodes_per_layer = list(chain.from_iterable([[i[0] for i in j] for j in structure]))
     n_nodes = sum(nodes_per_layer)
@@ -200,13 +193,14 @@ class ANNStructuredAgent(SimAgent):
     def __init__(self, context, *args, **kwds):
         super().__init__(context, *args, **kwds)
         # Get or set the structure.
-        structure = self._ctx.get(self.STRUCTURE_KEY)
-        if structure is None:
-            structure = _create_initial_structure()
-            self._ctx[self.STRUCTURE_KEY] = structure
+        # structure = self._ctx.get(self.STRUCTURE_KEY)
+        # if structure is None:
+        #     structure = _create_initial_structure()
+        #     self._ctx[self.STRUCTURE_KEY] = structure
         # TODO: generate weights.
 
         structure = _create_initial_structure()
-        wheight_matrix, wheight_matrix_normal, n_nodes = create_matrix(structure)
+        wheight_matrix, wheight_matrix_normal, n_nodes = \
+            _create_matrix(structure)
 
 ANNStructuredAgent.register()
