@@ -5,7 +5,7 @@ from ne_simulator import Evolution as EvolutionBase
 from ne_simulator.sim_objects.ann_structure_agent import ANNStructuredAgent
 
 
-_MAX_GENERATIONS = 10
+_MAX_GENERATIONS = 100
 
 
 def _randomize(value, delta):
@@ -33,13 +33,23 @@ def _avg_max(mm1, mm2):
     return (max1 + max2) / 2.0
 
 
+def _ensure_delta(min_v, max_v, delta, upper):
+    if max_v - min_v < delta:
+        if min_v + delta > upper:
+            min_v = max_v - delta
+        else:
+            max_v = min_v + delta
+    return min_v, max_v
+
+
 def _combine(a1, a2):
     return {
-        k: (
+        k: _ensure_delta(
             _normalize(
                 _randomize(_avg_min(a1[k], a2[k]), delta), lower, upper),
             _normalize(
-                _randomize(_avg_max(a1[k], a2[k]), delta), lower, upper))
+                _randomize(_avg_max(a1[k], a2[k]), delta), lower, upper),
+            delta, upper)
         for k, (_, _, lower, upper, delta)
         in ANNStructuredAgent.MIN_MAX_TEMPLATE.items()
     }
