@@ -244,7 +244,16 @@ class ANNStructuredAgent(SimAgent):
         ]]
     """
 
-    STRUCTURE_KEY = "structure"
+    MIN_MAX_KEY = "min_max"
+
+    MIN_MAX_TEMPLATE = {
+        # min, max, lower, upper, delta
+        "nodes": (8, 14, 2.0, 20.0, 1.0),
+        "layers": (3, 6, 2.0, 10.0, 0.3),
+        "mu": (0.4, 0.5, 0.0, 1.0, 0.01),
+        "sigma": (0.25, 0.3, 0.2, 0.5, 0.001),
+        "outdegree": (1, 4, 1.0, 15.0, 0.3)
+    }
 
     def __init__(self, context, *args, **kwds):
         super().__init__(context, *args, **kwds)
