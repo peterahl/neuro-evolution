@@ -37,8 +37,7 @@ def _connect_all_to_all(sources, targets, weight_matrix):
         multiplication later"""
     for s in sources:
         for t in targets:
-            weight_matrix[t][s] = np.random.random()
-
+            weight_matrix[t][s] = np.random.random()/2.0
 
 def _max_index(input_vector):
     max_value = 0
@@ -91,8 +90,9 @@ class ANNSimpleAgent(SimAgent):
         _connect_all_to_all(layer1, layer2, weights)
         _connect_all_to_all(layer2, layer3, weights)
 
-        # print("--------WEIGHT MATRIX--------------")
-        # print(self._weights)
+        #print("--------WEIGHT MATRIX--------------")
+        #print(weights)
+        #self._pretty_print_values(weights)
         
         return weights
 
@@ -120,7 +120,10 @@ class ANNSimpleAgent(SimAgent):
 
             """convert from binary to correct output format"""
             output = self._get_outputs()
-            # print(output)
+            #print(output)
+            
+            output += np.random.random(len(output))
+            #print(output)
             ind = _max_index(output)
             # print("Max output index", _OUTPUT_INDEX_TO_ACTION[ind])
             self._action = _OUTPUT_INDEX_TO_ACTION[ind]
@@ -131,6 +134,7 @@ class ANNSimpleAgent(SimAgent):
 
     def _step(self):
         self._node_values = expit(np.dot(self._weights, self._node_values))
+        self._node_values = np.dot(self._weights, self._node_values)
         # self._pretty_print_values(self._node_values)
 
     def _get_outputs(self):

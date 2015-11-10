@@ -48,6 +48,11 @@ class _ActionAgent(SimObject):
         return self._actions.pop()
 
 
+class _MapContainer():
+
+    MAP = None
+
+
 class ActionMoveTest(TestCase):
 
     def setUp(self):
@@ -62,9 +67,9 @@ class ActionMoveTest(TestCase):
         """ Place test agent on border and run one move action, see that
         nothing (no move) happens.
         """
-        map_lines = ["T"]
+        _MapContainer.MAP = "T"
         configuration = {
-            "map": map_lines,
+            "map": _MapContainer,
             "parameters": {(0, 0): ([[Direction.NORTH]], {})},
             "steps_limiter_steps": 1
         }
@@ -73,7 +78,8 @@ class ActionMoveTest(TestCase):
         agent = _MoveAgent._instance
         self.assertIsNotNone(agent)
         self.assertEqual(agent.move_agend_actions_count, 1)
-        self.assertEqual(sim._map.get_map_lines(), map_lines)
+        self.assertEqual(
+            sim._map.get_map_lines(), _MapContainer.MAP.split("\n"))
 
     def test_move(self):
         """ Place a test agent and move towards NORTH, EAST, SOUTH, WEST and
@@ -82,8 +88,9 @@ class ActionMoveTest(TestCase):
         nesw = [
             Direction.WEST, Direction.SOUTH, Direction.EAST, Direction.NORTH]
         map_lines = ["  ", "T "]
+        _MapContainer.MAP = "\n".join(map_lines)
         configuration = {
-            "map": map_lines,
+            "map": _MapContainer,
             "parameters": {(0, 1): ([nesw], {})},
             "steps_limiter_steps": 4
         }
@@ -91,4 +98,5 @@ class ActionMoveTest(TestCase):
         sim.run()
         self.assertEqual(
             sim.maps,
-            [map_lines, ["T ", "  "], [" T", "  "], ["  ", " T"], map_lines])
+            [map_lines, ["T ", "  "], [" T", "  "], ["  ", " T"],
+                map_lines])

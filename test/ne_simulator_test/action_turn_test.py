@@ -26,6 +26,11 @@ class _ActionAgent(SimObject):
         return self._actions.pop()
 
 
+class _MapContainer:
+
+    MAP = None
+
+
 class ActionTurnTest(TestCase):
 
     def setUp(self):
@@ -44,8 +49,9 @@ class ActionTurnTest(TestCase):
         actions = [
             Action.MOVE, Action.TURN_RIGHT, Action.MOVE, Action.TURN_LEFT]
         map_lines = ["  ", " T"]
+        _MapContainer.MAP = "\n".join(map_lines)
         configuration = {
-            "map": map_lines,
+            "map": _MapContainer,
             "parameters": {(1, 1): ([Direction.NORTH, actions], {})},
             "steps_limiter_steps": 4
         }
