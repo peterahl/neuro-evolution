@@ -19,10 +19,6 @@ def _print_step_count(sim):
     return "-" * sim._map._width + "\n" + "Step: {}\n".format(sim._step_count)
 
 
-EVOLUTION_KWDS = {
-    "wait_for_enter": True
-}
-
 SCENARIOS = [
     {
         SIMULATOR_CLASS: [
@@ -32,7 +28,7 @@ SCENARIOS = [
         ],
         SIMULATOR_CONFIGURATION: {
             CONFIGURATION_MAP: food_9x9,
-            "steps_limiter_steps": 200,
+            "steps_limiter_steps": 50,
             "map_printer_delimiter": _print_step_count
         }
     }

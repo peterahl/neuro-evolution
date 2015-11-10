@@ -1,26 +1,42 @@
 # -*- coding: utf-8 -*-
-from random import randint, random
+from itertools import chain
+from math import floor, ceil
+from random import randint, random, sample
+from scipy import sparse
+from scipy.special import expit
 
+import numpy as np
+
+from .empty import Empty
+from .food import Food
 from .sim_agent import SimAgent
+from .sim_object import SimObject
+from .wall import Wall
 
 
-# _OBJECT_TO_INPUT = {
-#     Wall.SYMBOL: (1, 0, 0), Empty.SYMBOL: (0, 1, 0), Food.SYMBOL: (0, 0, 1)}
-#
-# _MAX_ENERGY = 1.0
-#
-# _ENERGY_LEVELS = 5
-#
-# # Fields front, left, right, energy level and last action ok
-# _NUMBER_OF_INPUTS = len(_OBJECT_TO_INPUT) * 3 + _ENERGY_LEVELS
-#
-# _OUTPUT_INDEX_TO_ACTION = {
-#     0: SimObject.Action.MOVE,
-#     1: SimObject.Action.EAT,
-#     2: SimObject.Action.TURN_LEFT,
-#     3: SimObject.Action.TURN_RIGHT,
-#     4: SimObject.Action.DO_NOTHING
-# }
+_OBJECT_TO_INPUT = {
+    Wall.SYMBOL: (1, 0, 0), Empty.SYMBOL: (0, 1, 0), Food.SYMBOL: (0, 0, 1)}
+
+_MAX_ENERGY = 1.0
+
+_ENERGY_LEVELS = 5
+
+_FRAC = 7
+
+_SHIFT = 3
+
+# Fields front, left, right, energy level and last action ok
+_N_INPUT_UNITS = len(_OBJECT_TO_INPUT) * 3 + _ENERGY_LEVELS
+
+_OUTPUT_INDEX_TO_ACTION = (
+    SimObject.Action.MOVE,
+    SimObject.Action.EAT,
+    SimObject.Action.TURN_LEFT,
+    SimObject.Action.TURN_RIGHT,
+    SimObject.Action.DO_NOTHING
+)
+
+_N_OUTPUT_UNITS = len(_OUTPUT_INDEX_TO_ACTION) - 1
 
 _INITIAL_UNITS = 1
 
@@ -42,12 +58,28 @@ _INITIAL_OUTDEGREE_MAX = 4
 
 _INITIAL_PROJECTIONS_PER_LAYER = 2
 
-_N_INPUT_UNITS = 14
 
-_N_OUTPUT_UNITS = 5
+def _energy_conversion(energy):
+    energy_index = round(energy * (_ENERGY_LEVELS - 1) / _MAX_ENERGY)
+    return [1 if i == energy_index else 0 for i in range(_ENERGY_LEVELS)]
+
+
+def _max_index(input_vector):
+    max_value = 0
+    max_index = 0
+    for i, element in enumerate(input_vector):
+        if element > max_value:
+            max_value = element
+            max_index = i
+    # print(max_index, max_value)
+    if max_value > 0.01:
+        return max_index
+    return -1
+
 
 def _rand_range(rng):
     return random() * 2 * rng - rng
+
 
 def _create_initial_structure():
     """Create the inital randomized structure for the agent.
@@ -55,25 +87,27 @@ def _create_initial_structure():
     For the structure, see the ANNStructuredAgent configuration below.
 
     """
-    #seed(11)
+    # seed(11)
     # Create units (populations or columns) and layers with their nodes count.
     structure = [
         [(randint(_INITIAL_MIN_NODES, _INITIAL_MAX_NODES), {})
             for _ in range(randint(_INITIAL_LAYERS_MIN, _INITIAL_LAYERS_MAX))]
         for _ in range(_INITIAL_UNITS)
     ]
-    
-    structure[0][0] = (_N_INPUT_UNITS, {})    
+
+    structure[0][0] = (_N_INPUT_UNITS, {})
     structure[-1][-1] = (_N_OUTPUT_UNITS, {})
 
     # For each layer in each unit: add the configuration (connections).
 
     for j, unit in enumerate(structure):
-        for i, (num_nodes, conns) in enumerate(unit):
+        for i, (unused_num_nodes, conns) in enumerate(unit):
             # Connect this layer to other layers in the same unit.
-           
-            others = sample([n for n in range(len(unit)) if n != 0], _INITIAL_PROJECTIONS_PER_LAYER)
-            
+
+            others = sample(
+                [n for n in range(len(unit)) if n != 0],
+                _INITIAL_PROJECTIONS_PER_LAYER)
+
             for o in others:
                 conns[o] = (
                     _rand_range(_INITIAL_MU_RANGE), _INITIAL_SIGMA,
@@ -92,47 +126,59 @@ def _create_initial_structure():
 
     return structure
 
+
 def _node_index(nodes, to_layer):
-    #print(to_layer)
+    # print(to_layer)
     start = sum(nodes[:to_layer])
     stop = start + nodes[to_layer]
-    return list(range(start,stop))
+    return list(range(start, stop))
+
 
 def _projections(out_degree=4.4, n_projecting_nodes=10):
     low = int(floor(out_degree))
     high = int(ceil(out_degree))
     pl = high - out_degree
     ph = 1 - pl
-    return array(choice([low, high], n_projecting_nodes, p=[pl, ph]), dtype=int)
+    return np.array(
+        np.random.choice(
+            [low, high], n_projecting_nodes, p=[pl, ph]),
+        dtype=int)
+
 
 def _create_matrix(structure):
-    
-    nodes_per_layer = list(chain.from_iterable([[i[0] for i in j] for j in structure]))
+
+    nodes_per_layer = list(
+        chain.from_iterable([[i[0] for i in j] for j in structure]))
     n_nodes = sum(nodes_per_layer)
     print(n_nodes)
     layers_per_unit = [len(unit) for unit in structure]
 
-    accum_layers_per_unit = [sum(layers_per_unit[0:i]) for i in range(len(layers_per_unit))]
+    accum_layers_per_unit = [
+        sum(layers_per_unit[0:i]) for i in range(len(layers_per_unit))]
 
     wheight_matrix = sparse.lil_matrix((n_nodes, n_nodes))
     wheight_matrix_normal = np.zeros((n_nodes, n_nodes))
 
     for j, unit in enumerate(structure):
         for i, (num_nodes, conns) in enumerate(unit):
-            from_nodes = _node_index(nodes_per_layer, i + accum_layers_per_unit[j])
+            from_nodes = _node_index(
+                nodes_per_layer, i + accum_layers_per_unit[j])
 
-            # from_nodes är en lista med alla "från-noder" i aktuellt i
             others = conns.keys()
 
             for o in others:
                 if o:
                     to_layer = o + accum_layers_per_unit[j]
-                    #print("from " + str(from_nodes) + " to layer: " + str(to_layer))
-                    for from_node, n_projections in zip(from_nodes,
-                                                        _projections(conns[o][2], num_nodes)):
-                        for to_node in choice(_node_index(nodes_per_layer, to_layer),
-                                              n_projections):
-                            wheight = normal(conns[o][0], conns[o][1], 1)[0]
+                    # print(
+                    #     "from " + str(from_nodes) + " to layer: " +
+                    #     str(to_layer))
+                    for from_node, n_projections in zip(
+                            from_nodes, _projections(conns[o][2], num_nodes)):
+                        for to_node in np.random.choice(
+                                _node_index(nodes_per_layer, to_layer),
+                                n_projections):
+                            wheight = np.random.normal(
+                                conns[o][0], conns[o][1], 1)[0]
                             wheight_matrix[to_node, from_node] = wheight
                             wheight_matrix_normal[to_node][from_node] = wheight
                 else:
@@ -141,18 +187,24 @@ def _create_matrix(structure):
                     for to_unit in conns_to_layer.keys():
                         if to_unit:
                             to_layer = accum_layers_per_unit[to_unit]
-                            for from_node, n_projections in zip(from_nodes,
-                                                                _projections(conns_to_layer[to_unit][2], 
-                                                                             num_nodes)):
+                            for from_node, n_projections in zip(
+                                    from_nodes,
+                                    _projections(
+                                        conns_to_layer[to_unit][2],
+                                        num_nodes)):
 
-                                for to_node in choice(_node_index(nodes_per_layer, to_layer), 
-                                                      n_projections):
+                                for to_node in np.random.choice(
+                                        _node_index(nodes_per_layer, to_layer),
+                                        n_projections):
 
-                                    wheight = normal(conns_to_layer[to_unit][0], conns_to_layer[to_unit][1], 1)[0]
-#                                     wheight = normal(j+1, 0.1, 1)[0]
-                                    wheight_matrix[to_node, from_node] = wheight
-                                    wheight_matrix_normal[to_node][from_node] = wheight
-                                
+                                    wheight = np.random.normal(
+                                        conns_to_layer[to_unit][0],
+                                        conns_to_layer[to_unit][1], 1)[0]
+                                    wheight_matrix[to_node, from_node] = (
+                                        wheight)
+                                    (wheight_matrix_normal[to_node]
+                                        [from_node]) = wheight
+
     return wheight_matrix, wheight_matrix_normal, n_nodes
 
 
@@ -198,9 +250,32 @@ class ANNStructuredAgent(SimAgent):
         #     structure = _create_initial_structure()
         #     self._ctx[self.STRUCTURE_KEY] = structure
         # TODO: generate weights.
-
+        self._energy = _MAX_ENERGY
         structure = _create_initial_structure()
-        wheight_matrix, wheight_matrix_normal, n_nodes = \
-            _create_matrix(structure)
+        self._wheight_matrix, _, n_nodes = (
+            _create_matrix(structure))
+        self._nodes = np.zeros(n_nodes)
+
+    def start_turn(self, objects_map):
+        super().start_turn(objects_map)
+        # Reduce energy.
+        self._energy -= 0.01  # do not monitor this
+        if self._energy <= 0.0001:
+            self._action = self.Action.DIE
+        else:
+            visible = self.get_visible(objects_map)
+            binary_input = [
+                _OBJECT_TO_INPUT[f.SYMBOL] for f in visible]
+            binary_input = list(chain.from_iterable(binary_input))
+            binary_input.extend(_energy_conversion(self._energy))
+
+            self._nodes[0:_N_INPUT_UNITS] = binary_input
+            for _ in range(5):
+                self._nodes = expit(
+                    self._wheight_matrix.dot(self._nodes) * _FRAC - _SHIFT)
+                self._nodes[0:_N_INPUT_UNITS] = binary_input
+
+            action_index = _max_index(self._nodes[-_N_OUTPUT_UNITS:])
+            self._action = _OUTPUT_INDEX_TO_ACTION[action_index]
 
 ANNStructuredAgent.register()
