@@ -104,9 +104,13 @@ def _create_initial_structure():
         for i, (unused_num_nodes, conns) in enumerate(unit):
             # Connect this layer to other layers in the same unit.
 
-            others = sample(
-                [n for n in range(len(unit)) if n != 0],
-                _INITIAL_PROJECTIONS_PER_LAYER)
+            # connect to n number of random layers
+            # others = sample(
+            #     [n for n in range(len(unit)) if n != 0],
+            #     _INITIAL_PROJECTIONS_PER_LAYER)
+
+            # connect to all but self and input units
+            others = [n for n in range(1, len(unit)) if n != i]
 
             for o in others:
                 conns[o] = (
