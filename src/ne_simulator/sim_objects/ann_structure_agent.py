@@ -22,13 +22,13 @@ from .sim_agent import SimAgent
 #     4: SimObject.Action.DO_NOTHING
 # }
 
-_INITIAL_UNITS = 2
+_INITIAL_UNITS = 1
 
-_INITIAL_MIN_NODES = 4
+_INITIAL_MIN_NODES = 8
 
-_INITIAL_MAX_NODES = 8
+_INITIAL_MAX_NODES = 14
 
-_INITIAL_LAYERS_MIN = 4
+_INITIAL_LAYERS_MIN = 3
 
 _INITIAL_LAYERS_MAX = 6
 
@@ -36,13 +36,20 @@ _INITIAL_MU_RANGE = 0.5
 
 _INITIAL_SIGMA = 0.3
 
-_INITIAL_OUTDEGREE_MIN = 0
+_INITIAL_OUTDEGREE_MIN = 1
 
-_INITIAL_OUTDEGREE_MAX = 7
+_INITIAL_OUTDEGREE_MAX = 4
+
+_INITIAL_PROJECTIONS_PER_LAYER = 2
+
+_N_INPUT_UNITS = 14
+
+_N_OUTPUT_UNITS = 5
 
 
 def _rand_range(rng):
     return random() * 2 * rng - rng
+
 
 
 def _create_initial_structure():
@@ -51,31 +58,109 @@ def _create_initial_structure():
     For the structure, see the ANNStructuredAgent configuration below.
 
     """
+    #seed(11)
     # Create units (populations or columns) and layers with their nodes count.
     structure = [
         [(randint(_INITIAL_MIN_NODES, _INITIAL_MAX_NODES), {})
             for _ in range(randint(_INITIAL_LAYERS_MIN, _INITIAL_LAYERS_MAX))]
         for _ in range(_INITIAL_UNITS)
     ]
+    
+    structure[0][0] = (_N_INPUT_UNITS, {})    
+    structure[-1][-1] = (_N_OUTPUT_UNITS, {})
+
     # For each layer in each unit: add the configuration (connections).
+
     for j, unit in enumerate(structure):
-        for i, (_, conns) in enumerate(unit):
+        for i, (num_nodes, conns) in enumerate(unit):
             # Connect this layer to other layers in the same unit.
-            others = [n for n in range(len(unit)) if n != i]
+           
+            others = sample([n for n in range(len(unit)) if n != 0], _INITIAL_PROJECTIONS_PER_LAYER)
+            
             for o in others:
                 conns[o] = (
                     _rand_range(_INITIAL_MU_RANGE), _INITIAL_SIGMA,
                     randint(_INITIAL_OUTDEGREE_MIN, _INITIAL_OUTDEGREE_MAX))
+
             # Connect the last layer of the current unit to other units.
+
             if i == len(unit) - 1 and j < len(structure) - 1:
                 others = [n for n in range(len(structure)) if n != j]
-                conns[None] = {
-                    n: (_rand_range(_INITIAL_MU_RANGE), _INITIAL_SIGMA,
+                conns_to_layer = {
+                    n: (abs(_rand_range(_INITIAL_MU_RANGE)), _INITIAL_SIGMA,
                         randint(
                             _INITIAL_OUTDEGREE_MIN, _INITIAL_OUTDEGREE_MAX))
                     for n in others}
-    # TODO: set nodes count for global input and output manually.
+                conns[None] = conns_to_layer
+
     return structure
+
+
+
+
+def _node_index(nodes, to_layer):
+    #print(to_layer)
+    start = sum(nodes[:to_layer])
+    stop = start + nodes[to_layer]
+    return list(range(start,stop))
+
+def _projections(out_degree=4.4, n_projecting_nodes=10):
+    low = int(floor(out_degree))
+    high = int(ceil(out_degree))
+    pl = high - out_degree
+    ph = 1 - pl
+    return array(choice([low, high], n_projecting_nodes, p=[pl, ph]), dtype=int)
+
+
+def create_matrix(structure):
+    
+    nodes_per_layer = list(chain.from_iterable([[i[0] for i in j] for j in structure]))
+    n_nodes = sum(nodes_per_layer)
+    print(n_nodes)
+    layers_per_unit = [len(unit) for unit in structure]
+
+    accum_layers_per_unit = [sum(layers_per_unit[0:i]) for i in range(len(layers_per_unit))]
+
+    wheight_matrix = sparse.lil_matrix((n_nodes, n_nodes))
+    wheight_matrix_normal = np.zeros((n_nodes, n_nodes))
+
+    for j, unit in enumerate(structure):
+        for i, (num_nodes, conns) in enumerate(unit):
+            from_nodes = _node_index(nodes_per_layer, i + accum_layers_per_unit[j])
+
+            # from_nodes är en lista med alla "från-noder" i aktuellt i
+            others = conns.keys()
+
+            for o in others:
+                if o:
+                    to_layer = o + accum_layers_per_unit[j]
+                    #print("from " + str(from_nodes) + " to layer: " + str(to_layer))
+                    for from_node, n_projections in zip(from_nodes,
+                                                        _projections(conns[o][2], num_nodes)):
+                        for to_node in choice(_node_index(nodes_per_layer, to_layer),
+                                              n_projections):
+                            wheight = normal(conns[o][0], conns[o][1], 1)[0]
+                            wheight_matrix[to_node, from_node] = wheight
+                            wheight_matrix_normal[to_node][from_node] = wheight
+                else:
+                    # this happens if other (o) is none
+                    conns_to_layer = conns[o]
+                    for to_unit in conns_to_layer.keys():
+                        if to_unit:
+                            to_layer = accum_layers_per_unit[to_unit]
+                            for from_node, n_projections in zip(from_nodes,
+                                                                _projections(conns_to_layer[to_unit][2], 
+                                                                             num_nodes)):
+
+                                for to_node in choice(_node_index(nodes_per_layer, to_layer), 
+                                                      n_projections):
+
+                                    wheight = normal(conns_to_layer[to_unit][0], conns_to_layer[to_unit][1], 1)[0]
+#                                     wheight = normal(j+1, 0.1, 1)[0]
+                                    wheight_matrix[to_node, from_node] = wheight
+                                    wheight_matrix_normal[to_node][from_node] = wheight
+                                
+    return wheight_matrix, wheight_matrix_normal, n_nodes
 
 
 class ANNStructuredAgent(SimAgent):
@@ -121,5 +206,7 @@ class ANNStructuredAgent(SimAgent):
             self._ctx[self.STRUCTURE_KEY] = structure
         # TODO: generate weights.
 
+        structure = _create_initial_structure()
+        wheight_matrix, wheight_matrix_normal, n_nodes = create_matrix(structure)
 
 ANNStructuredAgent.register()
