@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from itertools import chain
 from math import floor, ceil
-from random import randint, random, sample
+from random import randint, random
 from scipy import sparse
 from scipy.special import expit
 
@@ -40,21 +40,21 @@ _N_OUTPUT_UNITS = len(_OUTPUT_INDEX_TO_ACTION) - 1
 
 _INITIAL_UNITS = 1
 
-_INITIAL_MIN_NODES = 8
-
-_INITIAL_MAX_NODES = 14
-
-_INITIAL_LAYERS_MIN = 3
-
-_INITIAL_LAYERS_MAX = 6
-
-_INITIAL_MU_RANGE = 0.5
-
-_INITIAL_SIGMA = 0.3
-
-_INITIAL_OUTDEGREE_MIN = 1
-
-_INITIAL_OUTDEGREE_MAX = 4
+# _INITIAL_MIN_NODES = 8
+#
+# _INITIAL_MAX_NODES = 14
+#
+# _INITIAL_LAYERS_MIN = 3
+#
+# _INITIAL_LAYERS_MAX = 6
+#
+# _INITIAL_MU_RANGE = 0.5
+#
+# _INITIAL_SIGMA = 0.3
+#
+# _INITIAL_OUTDEGREE_MIN = 1
+#
+# _INITIAL_OUTDEGREE_MAX = 4
 
 _INITIAL_PROJECTIONS_PER_LAYER = 2
 
@@ -77,11 +77,11 @@ def _max_index(input_vector):
     return -1
 
 
-def _rand_range(rng):
-    return random() * 2 * rng - rng
+def _rand_range(rng_min, rng_max):
+    return random() * (rng_max - rng_min) + rng_min
 
 
-def _create_initial_structure():
+def _create_initial_structure(min_max):
     """Create the inital randomized structure for the agent.
 
     For the structure, see the ANNStructuredAgent configuration below.
@@ -89,6 +89,17 @@ def _create_initial_structure():
     """
     # seed(11)
     # Create units (populations or columns) and layers with their nodes count.
+    _INITIAL_MIN_NODES, _INITIAL_MAX_NODES = min_max["nodes"]
+    _INITIAL_MIN_NODES = int(round(_INITIAL_MIN_NODES))
+    _INITIAL_MAX_NODES = int(round(_INITIAL_MAX_NODES))
+    _INITIAL_LAYERS_MIN, _INITIAL_LAYERS_MAX = min_max["layers"]
+    _INITIAL_LAYERS_MIN = int(round(_INITIAL_LAYERS_MIN))
+    _INITIAL_LAYERS_MAX = int(round(_INITIAL_LAYERS_MAX))
+    _INITIAL_MU_MIN, _INITIAL_MU_MAX = min_max["mu"]
+    _INITIAL_SIGMA_MIN, _INITIAL_SIGMA_MAX = min_max["sigma"]
+    _INITIAL_OUTDEGREE_MIN, _INITIAL_OUTDEGREE_MAX = min_max["outdegree"]
+    _INITIAL_OUTDEGREE_MIN = int(round(_INITIAL_OUTDEGREE_MIN))
+    _INITIAL_OUTDEGREE_MAX = int(round(_INITIAL_OUTDEGREE_MAX))
     structure = [
         [(randint(_INITIAL_MIN_NODES, _INITIAL_MAX_NODES), {})
             for _ in range(randint(_INITIAL_LAYERS_MIN, _INITIAL_LAYERS_MAX))]
@@ -114,7 +125,8 @@ def _create_initial_structure():
 
             for o in others:
                 conns[o] = (
-                    _rand_range(_INITIAL_MU_RANGE), _INITIAL_SIGMA,
+                    _rand_range(_INITIAL_MU_MIN, _INITIAL_MU_MAX),
+                    _rand_range(_INITIAL_SIGMA_MIN, _INITIAL_SIGMA_MAX),
                     randint(_INITIAL_OUTDEGREE_MIN, _INITIAL_OUTDEGREE_MAX))
 
             # Connect the last layer of the current unit to other units.
@@ -122,7 +134,9 @@ def _create_initial_structure():
             if i == len(unit) - 1 and j < len(structure) - 1:
                 others = [n for n in range(len(structure)) if n != j]
                 conns_to_layer = {
-                    n: (abs(_rand_range(_INITIAL_MU_RANGE)), _INITIAL_SIGMA,
+                    n: (
+                        _rand_range(_INITIAL_MU_MIN, _INITIAL_MU_MAX),
+                        _rand_range(_INITIAL_SIGMA_MIN, _INITIAL_SIGMA_MAX),
                         randint(
                             _INITIAL_OUTDEGREE_MIN, _INITIAL_OUTDEGREE_MAX))
                     for n in others}
@@ -154,7 +168,7 @@ def _create_matrix(structure):
     nodes_per_layer = list(
         chain.from_iterable([[i[0] for i in j] for j in structure]))
     n_nodes = sum(nodes_per_layer)
-    print(n_nodes)
+    # print(n_nodes)
     layers_per_unit = [len(unit) for unit in structure]
 
     accum_layers_per_unit = [
@@ -250,7 +264,7 @@ class ANNStructuredAgent(SimAgent):
         # min, max, lower, upper, delta
         "nodes": (8, 14, 2.0, 20.0, 1.0),
         "layers": (3, 6, 2.0, 10.0, 0.3),
-        "mu": (0.4, 0.5, 0.0, 1.0, 0.01),
+        "mu": (-0.5, 0.5, -1.0, 1.0, 0.01),
         "sigma": (0.25, 0.3, 0.2, 0.5, 0.001),
         "outdegree": (1, 4, 1.0, 15.0, 0.3)
     }
@@ -258,13 +272,15 @@ class ANNStructuredAgent(SimAgent):
     def __init__(self, context, *args, **kwds):
         super().__init__(context, *args, **kwds)
         # Get or set the structure.
-        # structure = self._ctx.get(self.STRUCTURE_KEY)
-        # if structure is None:
-        #     structure = _create_initial_structure()
-        #     self._ctx[self.STRUCTURE_KEY] = structure
-        # TODO: generate weights.
+        min_max = self._ctx.get(self.MIN_MAX_KEY)
+        if min_max is None:
+            min_max = {
+                k: (imin, imax)
+                for k, (imin, imax, _, _, _) in self.MIN_MAX_TEMPLATE.items()
+            }
+            self._ctx[self.MIN_MAX_KEY] = min_max
         self._energy = _MAX_ENERGY
-        structure = _create_initial_structure()
+        structure = _create_initial_structure(min_max)
         self._wheight_matrix, _, n_nodes = (
             _create_matrix(structure))
         self._nodes = np.zeros(n_nodes)

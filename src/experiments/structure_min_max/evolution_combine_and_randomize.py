@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from random import random, choice, randint
+from random import random, randint
 
 from ne_simulator import Evolution as EvolutionBase
 from ne_simulator.sim_objects.ann_structure_agent import ANNStructuredAgent
@@ -35,11 +35,13 @@ def _avg_max(mm1, mm2):
 
 def _combine(a1, a2):
     return {
-        (_normalize(_randomize(_avg_min(a1[k], a2[k]), delta), lower, upper),
+        k: (
+            _normalize(
+                _randomize(_avg_min(a1[k], a2[k]), delta), lower, upper),
             _normalize(
                 _randomize(_avg_max(a1[k], a2[k]), delta), lower, upper))
         for k, (_, _, lower, upper, delta)
-        in ANNStructuredAgent.MIN_MAX_TEMPLATE
+        in ANNStructuredAgent.MIN_MAX_TEMPLATE.items()
     }
 
 
@@ -103,8 +105,9 @@ class Evolution(EvolutionBase):
             new_states = []
             for _ in simulations_contexts:
                 best_choice = list(best)
-                a1 = best_choice.pop(randint(len(best_choice) - 1))
-                a2 = best_choice.pop(randint(len(best_choice) - 1))
+                a1 = best_choice.pop(randint(0, len(best_choice) - 1))
+                a2 = best_choice.pop(randint(0, len(best_choice) - 1))
                 new_states.append(
                     {CONTEXT_KEY_PREFIX: {MIN_MAX_KEY: _combine(a1, a2)}})
+        # print(new_states)
         return should_continue, new_states

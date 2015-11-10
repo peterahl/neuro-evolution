@@ -6,7 +6,7 @@ Uses multiprocessing.
 from ne_simulator import Food, SIMULATOR_CONFIGURATION, SIMULATOR_CLASS, \
     CONFIGURATION_MAP, SCORE_MONITOR
 from ne_simulator.maps import food_9x9
-from ne_simulator.sim_objects.random_agent import RandomAgent
+from ne_simulator.sim_objects.ann_structure_agent import ANNStructuredAgent
 
 
 EVOLUTION = "combine_and_randomize"
@@ -28,7 +28,7 @@ SCENARIOS = [
             CONFIGURATION_MAP: food_9x9,
             # CONFIGURATION_PARAMETERS: {
             # },
-            "until_no_objects": (RandomAgent, Food),
+            "until_no_objects": (ANNStructuredAgent, Food),
         }
     }
 ]
