@@ -79,3 +79,4 @@ peters-notebook.ipynb
 src/matrix_mult_test.py
 src/ne_simulator/test_weight_matrix.py
 tmp/
+*.png
