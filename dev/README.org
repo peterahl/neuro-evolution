@@ -1,0 +1,19 @@
+* Idea
+
+The idea of this project is to replicate the "good" parts of biology. In
+general, biology managed to create a code that is general, that can be
+mutated and combined and that from a relatively 'small' number of building
+blocks can create large and complex systems. 
+
+Although we can not create our networks from building blocks like proteins,
+we can give our networks properties that are 
+
+there is a really strong winner takes all dynamics in biology, and a low
+probability of mutation.
+
+
+* Geometry
+Could you use geometrical properties to create connectivity??? Will do for
+nice visualization.
+
+

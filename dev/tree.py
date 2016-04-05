@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import uuid
 import pygraphviz as PG
+import random
 
 A = PG.AGraph(directed=True, strict=True)
 
@@ -74,15 +75,21 @@ class Network(Dot):
         self.node_type = 'Network'
 
 
-dna = '1234124500120011'
+dna = '123 4 124 5 001 2 002 1'
+dna='1239124500120011'
 
-dna = ['1204',
-       '1205',
-       '0012',
-       '0021',
-]
+# dna = ['1204',
+#        '1205',
+#        '0006',
+#        '0006',
+#        '0006',
+#        '0006',
+#        '0012',
+#        '0021',
+# ]
 
-dna = ''.join(dna)
+# dna = ''.join(dna)
+# dna = ''.join([str(random.randint(0,5)) for n in range(80)])
 
 
 test_node = Root(dna)
