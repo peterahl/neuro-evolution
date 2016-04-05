@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from itertools import chain
+from itertools import chain, count
 from random import random, choice, randrange
 
 from ..position import Direction, turn
@@ -8,12 +8,22 @@ from .food import Food
 from .sim_agent import SimAgent
 from .sim_object import SimObject
 from .wall import Wall
+from collections import defaultdict
+from enum import Enum, unique
 
 
 _INPUT_NUMBER = 3 * 5 + 4 + 5  # 24, fields, direction, energy
+
 _OUTPUT_NUMBER = 5
+
 _THRESHOLD = 0.9
+
 _MAX_ENERGY = 2.0
+
+_MIN_WEIGHT = -30.0
+
+_MAX_WEIGHT = 30.0
+
 _ACTIONS = [
     SimObject.Action.EAT,
     SimObject.Action.MOVE,
@@ -54,6 +64,39 @@ def _winner_takes_all(states):
     out = [0 for _ in states]
     out[ind] = 1
     return out
+
+_node_id_seq = count()
+
+_inovation_id_seq = count()
+
+_inovations = defaultdict(lambda: next(_inovation_id_seq))
+
+_initial_genoms = None
+
+
+@unique
+class _NodeType(Enum):
+
+    INPUT = 'in'
+
+    OUTPUT = 'out'
+
+
+def _get_or_create_initial_genoms():
+    global _initial_genoms
+    if _initial_genoms is None:
+        in_nodes = [
+            (next(_node_id_seq), _NodeType.INPUT)
+            for _ in range(_INPUT_NUMBER)]
+        out_nodes = [
+            (next(_node_id_seq), _NodeType.OUTPUT)
+            for _ in range(_OUTPUT_NUMBER)]
+        in_connections = [choice(out_nodes)[0] for i in in_nodes]
+        connections = [
+            (i[0], o, randrange(_MIN_WEIGHT, _MAX_WEIGHT), _inovations[(i, o)])
+            for i, o in zip(in_nodes, in_connections)]
+        _initial_genoms = (in_nodes + out_nodes, connections)
+    return _initial_genoms
 
 
 class NeatAgent(SimAgent):
