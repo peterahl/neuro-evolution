@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from itertools import chain, count
+from collections import defaultdict
+from itertools import chain
+from enum import Enum
 from random import random, choice, randrange
 
 from ..position import Direction, turn
@@ -8,8 +10,6 @@ from .food import Food
 from .sim_agent import SimAgent
 from .sim_object import SimObject
 from .wall import Wall
-from collections import defaultdict
-from enum import Enum, unique
 
 
 _INPUT_NUMBER = 3 * 5 + 4 + 5  # 24, fields, direction, energy
@@ -20,10 +20,6 @@ _THRESHOLD = 0.9
 
 _MAX_ENERGY = 2.0
 
-_MIN_WEIGHT = -30.0
-
-_MAX_WEIGHT = 30.0
-
 _ACTIONS = [
     SimObject.Action.EAT,
     SimObject.Action.MOVE,
@@ -31,6 +27,13 @@ _ACTIONS = [
     SimObject.Action.TURN_RIGHT,
     SimObject.Action.DO_NOTHING
 ]
+
+
+class NodeType(Enum):
+
+    INPUT = 'in'
+
+    OUTPUT = 'out'
 
 
 def _vectorize_object(obj):
@@ -53,52 +56,6 @@ def _vectorize_energy(energy):
     return out
 
 
-def _winner_takes_all(states):
-    print(states)
-    maximum = 0
-    ind = 0
-    for j, state in enumerate(states):
-        if state > maximum:
-            maximum = state
-            ind = j
-    out = [0 for _ in states]
-    out[ind] = 1
-    return out
-
-_node_id_seq = count()
-
-_inovation_id_seq = count()
-
-_inovations = defaultdict(lambda: next(_inovation_id_seq))
-
-_initial_genoms = None
-
-
-@unique
-class _NodeType(Enum):
-
-    INPUT = 'in'
-
-    OUTPUT = 'out'
-
-
-def _get_or_create_initial_genoms():
-    global _initial_genoms
-    if _initial_genoms is None:
-        in_nodes = [
-            (next(_node_id_seq), _NodeType.INPUT)
-            for _ in range(_INPUT_NUMBER)]
-        out_nodes = [
-            (next(_node_id_seq), _NodeType.OUTPUT)
-            for _ in range(_OUTPUT_NUMBER)]
-        in_connections = [choice(out_nodes)[0] for i in in_nodes]
-        connections = [
-            (i[0], o, randrange(_MIN_WEIGHT, _MAX_WEIGHT), _inovations[(i, o)])
-            for i, o in zip(in_nodes, in_connections)]
-        _initial_genoms = (in_nodes + out_nodes, connections)
-    return _initial_genoms
-
-
 class NeatAgent(SimAgent):
     """ Fill in later
     """
@@ -109,39 +66,37 @@ class NeatAgent(SimAgent):
         super().__init__(state, *args, **kwds)
         self._monitor['_energy'] = _MAX_ENERGY
         self._monitor['_direction'] = Direction.NORTH
-        self._hidden = 0
-        nodes = [i for i in range(_INPUT_NUMBER+_OUTPUT_NUMBER+self._hidden)]
-        self._states = [0 for _ in nodes]
-        self._connections = []
+        self._nodes, self._connections = state["genome"]
+        self._states = defaultdict(lambda: 0)
 
-        for _ in range(_INPUT_NUMBER):
-            connect_element = (
-                randrange(_INPUT_NUMBER, len(nodes), 1),
-                random() * choice([1, -1])
-            )
-            self._connections.append([connect_element])
-
-        for _ in range(_OUTPUT_NUMBER):
-            self._connections.append([])
+    def _winner_takes_all(self, states):
+        print(states)
+        maximum = 0
+        ind = 0
+        for nid, state in states.items():
+            if state > maximum:
+                maximum = state
+                ind = nid
+        return {nid: 1 if nid == ind else 0 for nid in states.keys()}
 
     def _integrate_network(self, input_state):
-        self._states = input_state + self._states[_INPUT_NUMBER:]
-        out_state = [
-            0.0 for _ in range(_INPUT_NUMBER+_OUTPUT_NUMBER+self._hidden)]
-        for j, connections in enumerate(self._connections):
-            for dest, weight in connections:
-                out_state[dest] += self._states[j] * weight
+        # Get save input states
+        for i, in_state in enumerate(input_state):
+            self._states[i] = in_state
 
-        print(out_state)
-        self._states = [
-            1 if state > _THRESHOLD else 0
-            for state in out_state[: _INPUT_NUMBER]]
-        self._states.extend(
-            _winner_takes_all(
-                out_state[_INPUT_NUMBER: _INPUT_NUMBER + _OUTPUT_NUMBER]))
-        self._states.extend([
-            1 if state > _THRESHOLD else 0
-            for state in out_state[_INPUT_NUMBER + _OUTPUT_NUMBER:]])
+        out_state = defaultdict(lambda: 0.0)
+        for in_id, out_id, weight, _ in self._connections:
+            out_state[out_id] += self._states[in_id] * weight
+
+        # print(out_state)
+        self._states = {
+            nid: 1 if state > _THRESHOLD else 0
+            for nid, state in out_state.items()}
+        self._states.update(
+            self._winner_takes_all(
+                {nid: out_state[nid]
+                    for nid, n_type in self._nodes
+                    if n_type == NodeType.OUTPUT}))
 
     def add_energy(self, energy):
             super().add_energy(energy)
@@ -199,8 +154,9 @@ class NeatAgent(SimAgent):
             input_state.extend(_vectorize_energy(self._energy))
             self._integrate_network(input_state)
             # Choose what to do.
-            out_states = self._states[
-                _INPUT_NUMBER: _INPUT_NUMBER + _OUTPUT_NUMBER]
+            out_states = [
+                self._states[nid]
+                for nid, n_type in self._nodes if n_type == NodeType.OUTPUT]
             print(self._states)
             print(out_states)
             self._action = _ACTIONS[out_states.index(1)]
