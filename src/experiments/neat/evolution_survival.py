@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
 from .evolution_default import Evolution as DefaultEvolution
 from pprint import pprint
-from random import randrange, choice
+from random import randrange, choice, random
 from itertools import groupby
 
 
-_MAX_GENERATIONS = 6
+_MAX_GENERATIONS = 40
 
 _TOP_PERCENTAGE = 0.2
+
+_WEIGHT_MUTATION_PROBABILITY = 0.33
+
+_WEIGHT_SCALE_FACTOR = 0.15
+
+_WEIGHT_REPLACEMENT_PROBABILITY = 0.05
 
 
 def _get_random_element(values):
@@ -97,6 +103,25 @@ class Evolution(DefaultEvolution):
 
             # TODO: keep only relevant nodes
             nodes = list(set(nodes1) | set(nodes2))
+
+            # Mutate weights.
+            for c in connections:
+                weight = c[2]
+                # Mutation
+                weight += (
+                    (choice([1, -1]) * random() * _WEIGHT_SCALE_FACTOR)
+                    if random() < _WEIGHT_MUTATION_PROBABILITY
+                    else 0)
+                if weight > 1:
+                    weight = 1.0
+                if weight < -1:
+                    weight = -1.0
+                # Replacement
+                weight = (
+                    (choice([1, -1]) * random())
+                    if random() < _WEIGHT_REPLACEMENT_PROBABILITY
+                    else weight)
+                c[2] = weight
 
             new_states.append({"agent": {"genome": (nodes, connections)}})
 

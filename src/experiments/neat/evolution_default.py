@@ -43,7 +43,7 @@ class Evolution(Evolution):
                     out_node, _ = choice(out_nodes)
                     weight = choice([1, -1]) * random()
                     connections.append(
-                        (node, out_node, weight, _inovations[(node, out_node)])
+                        [node, out_node, weight, _inovations[(node, out_node)]]
                     )
             simulation_state["agent"] = {}
             simulation_state["agent"]["genome"] = (
