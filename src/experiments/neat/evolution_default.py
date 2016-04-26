@@ -33,8 +33,7 @@ class Evolution(Evolution):
         out_nodes = [
             (next(_node_id_seq), NodeType.OUTPUT)
             for _ in range(_OUTPUT_NUMBER)]
-
-        for agent in self._simulation_states:
+        for simulation_state in self._simulation_states:
             connections = []
 
             for node, _ in in_nodes:
@@ -46,5 +45,7 @@ class Evolution(Evolution):
                     connections.append(
                         (node, out_node, weight, _inovations[(node, out_node)])
                     )
-            agent["genome"] = (in_nodes + out_nodes, connections)
+            simulation_state["agent"] = {}
+            simulation_state["agent"]["genome"] = (
+                in_nodes + out_nodes, connections)
             # print(agent["genome"])

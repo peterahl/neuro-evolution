@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
-from itertools import chain
 from enum import Enum
-from random import random, choice, randrange
+from itertools import chain
 
 from ..position import Direction, turn
 from .empty import Empty
@@ -66,7 +65,7 @@ class NeatAgent(SimAgent):
         super().__init__(state, *args, **kwds)
         self._monitor['_energy'] = _MAX_ENERGY
         self._monitor['_direction'] = Direction.NORTH
-        self._nodes, self._connections = state["genome"]
+        self._nodes, self._connections = self._ctx["genome"]
         self._states = defaultdict(lambda: 0)
 
     def _winner_takes_all(self, states):
