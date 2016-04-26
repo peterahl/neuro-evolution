@@ -70,7 +70,6 @@ class NeatAgent(SimAgent):
         self._states = defaultdict(lambda: 0)
 
     def _winner_takes_all(self, states):
-        print(states)
         maximum = 0
         ind = 0
         for nid, state in states.items():
@@ -143,7 +142,6 @@ class NeatAgent(SimAgent):
         super().start_turn(objects_map)
         # Reduce energy.
         self._energy -= 0.1  # do not tell the monitor
-        print(self._connections)
         if self._energy <= 0.0001:
             self._action = self.Action.DIE
         else:
@@ -157,9 +155,10 @@ class NeatAgent(SimAgent):
             out_states = [
                 self._states[nid]
                 for nid, n_type in self._nodes if n_type == NodeType.OUTPUT]
-            print(self._states)
-            print(out_states)
-            self._action = _ACTIONS[out_states.index(1)]
+            try:
+                self._action = _ACTIONS[out_states.index(1)]
+            except ValueError:  # no output selected
+                self._action = SimObject.Action.DO_NOTHING
 
 
 NeatAgent.register()
