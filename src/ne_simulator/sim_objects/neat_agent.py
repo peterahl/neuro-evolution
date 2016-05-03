@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from enum import Enum
 from itertools import chain
 
@@ -30,9 +30,16 @@ _ACTIONS = [
 
 class NodeType(Enum):
 
-    INPUT = 'in'
+    INPUT = "in"
 
-    OUTPUT = 'out'
+    OUTPUT = "out"
+
+    HIDDEN = "hidden"
+
+Node = namedtuple("Node", ("id", "node_type"))
+
+Connection = namedtuple(
+    "Connection", ("node_in", "node_out", "weight", "innovation", "enabled"))
 
 
 def _vectorize_object(obj):
@@ -83,13 +90,15 @@ class NeatAgent(SimAgent):
             self._states[i] = in_state
 
         out_state = defaultdict(lambda: 0.0)
-        for in_id, out_id, weight, _ in self._connections:
-            out_state[out_id] += self._states[in_id] * weight
+        for connection in self._connections:
+            if connection.enabled:
+                out_state[connection.node_out] += (
+                    self._states[connection.node_in] * connection.weight)
 
         # print(out_state)
-        self._states = {
-            nid: 1 if state > _THRESHOLD else 0
-            for nid, state in out_state.items()}
+        self._states = defaultdict(lambda: 0)
+        for nid, state in out_state.items():
+            self._states[nid] = 1 if state > _THRESHOLD else 0
         self._states.update(
             self._winner_takes_all(
                 {nid: out_state[nid]

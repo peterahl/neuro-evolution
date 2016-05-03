@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
-from .evolution_default import Evolution as DefaultEvolution
-from pprint import pprint
+from itertools import groupby, chain
 from random import randrange, choice, random
-from itertools import groupby
+
+from ne_simulator.sim_objects.neat_agent import NodeType, Connection, Node
+
+from .evolution_default import Evolution as DefaultEvolution, innovations, \
+    node_id_seq, random_weight
 
 
 _MAX_GENERATIONS = 40
 
-_TOP_PERCENTAGE = 0.2
+_TOP_PERCENTAGE = 0.33
 
 _WEIGHT_MUTATION_PROBABILITY = 0.33
 
@@ -15,10 +18,133 @@ _WEIGHT_SCALE_FACTOR = 0.15
 
 _WEIGHT_REPLACEMENT_PROBABILITY = 0.05
 
+_ADD_CONNECTION_PROBABILITY = 0.2
 
-def _get_random_element(values):
-    index = randrange(0, len(values))
-    return values.pop(index)
+_ADD_NODE_PROBABILITY = 0.1
+
+_DISABLE_PROBABILITY = 0.05
+
+_ENABLE_PROBABILITY = 0.05
+
+
+def _get_random_elements(values, count):
+    return tuple(
+        values.pop(randrange(0, len(values))) for _ in range(count))
+
+
+def _cleanup_nodes(nodes, connections):
+    hidden_nodes = set(n.id for n in nodes if n.node_type == NodeType.HIDDEN)
+    hidden_nodes -= set(
+        chain.from_iterable((c.node_in, c.node_out) for c in connections))
+    return [n for n in nodes if n.id not in hidden_nodes]
+    # return hidden_nodes & set(
+    #     chain.from_iterable(*[(c.node_in, c.node_out) for c in connections]
+
+
+def _cross_genome(parents):
+    parent1, parent2 = _get_random_elements(parents, 2)
+
+    nodes1, connections1 = parent1
+    nodes2, connections2 = parent2
+
+    # Get invoation numbers.
+    innovation_numbers = sorted(list(
+        set(c.innovation for c in connections1) |
+        set(c.innovation for c in connections2)))
+
+    # Index connections by inovation number.
+    connections1 = {c.innovation: c for c in connections1}
+    connections2 = {c.innovation: c for c in connections2}
+
+    sections = groupby(
+        [(connections1.get(i), connections2.get(i))
+            for i in innovation_numbers],
+        lambda c: None if c[0] and c[1] else (0 if c[0] is None else 1))
+    connections = []
+    for _, section in sections:
+        connections.extend(c for c in choice(list(zip(*section))) if c)
+
+    nodes = list(set(nodes1) | set(nodes2))
+
+    #return _cleanup_nodes(nodes, connections), connections
+    return nodes, connections
+
+
+def _mutate_weights(connections):
+    # Mutate weights.
+    for (i, c) in enumerate(connections):
+        weight = c.weight  # shortcut
+        # Mutation
+        weight += (
+            (random_weight() * _WEIGHT_SCALE_FACTOR)
+            if random() < _WEIGHT_MUTATION_PROBABILITY
+            else 0)
+        if weight > 1:
+            weight = 1.0
+        if weight < -1:
+            weight = -1.0
+        # Replacement
+        weight = (
+            random_weight()
+            if random() < _WEIGHT_REPLACEMENT_PROBABILITY
+            else weight)
+        connections[i] = Connection(
+            c.node_in, c.node_out, weight, c.innovation, c.enabled)
+
+
+def _add_connection(nodes, connections):
+    # Add connection.
+    if random() < _ADD_CONNECTION_PROBABILITY:
+        (node1_id, _), (node2_id, _) = _get_random_elements(list(nodes), 2)
+        connections.append(
+            Connection(
+                node1_id, node2_id, random_weight(),
+                innovations[(node1_id, node2_id)], True))
+
+
+def _add_node(nodes, connections):
+    if connections and random() < _ADD_NODE_PROBABILITY:
+        # Get connection to replace.
+        connection_index = randrange(0, len(connections))
+        connection = connections[connection_index]
+        # Create new node.
+        new_node = next(node_id_seq)
+        nodes.append(Node(new_node, NodeType.HIDDEN))
+        # Add new connections.
+        connections.append(
+            Connection(
+                connection.node_in, new_node, 1,
+                innovations[(connection.node_in, new_node)], True))
+        connections.append(
+            Connection(
+                new_node, connection.node_out, connection.weight,
+                innovations[(new_node, connection.node_out)], True))
+        # Disable replaced connection.
+        connections[connection_index] = Connection(
+            connection.node_in, connection.node_out, connection.weight,
+            connection.innovation, False)
+
+
+def _flip_connection_status(connections, index):
+    c = connections[index]
+    connections[index] = Connection(
+        c.node_in, c.node_out, c.weight, c.innovation, not c.enabled)
+
+
+def _enable_disable_connections(connections):
+    if not connections:
+        return
+    states = [
+        (i if c.enabled else None, i if not c.enabled else None)
+        for i, c in enumerate(connections)]
+    enabled, disabled = zip(*states)
+
+    enabled = [i for i in enabled if i is not None]
+    if enabled and random() < _DISABLE_PROBABILITY:
+        _flip_connection_status(connections, choice(enabled))
+    disabled = [i for i in disabled if i is not None]
+    if disabled and random() < _ENABLE_PROBABILITY:
+        _flip_connection_status(connections, choice(disabled))
 
 
 class Evolution(DefaultEvolution):
@@ -76,53 +202,11 @@ class Evolution(DefaultEvolution):
         assert len(states) > 1
         new_states = []
         for _ in simulation_states:
-            parents = [s["genome"] for s in states]
-            parent1 = _get_random_element(parents)
-            parent2 = _get_random_element(parents)
-
-            nodes1, connections1 = parent1
-            nodes2, connections2 = parent2
-
-            # Get invoation numbers.
-            inovation_numbers = sorted(list(
-                set(c[3] for c in connections1) |
-                set(c[3] for c in connections2)))
-
-            # Index connections by inovation number.
-            connections1 = {c[3]: c for c in connections1}
-            connections2 = {c[3]: c for c in connections2}
-
-            sections = groupby(
-                [(connections1.get(i), connections2.get(i))
-                    for i in inovation_numbers],
-                lambda c:
-                    None if c[0] and c[1] else (0 if c[0] is None else 1))
-            connections = []
-            for _, section in sections:
-                connections.extend(c for c in choice(list(zip(*section))) if c)
-
-            # TODO: keep only relevant nodes
-            nodes = list(set(nodes1) | set(nodes2))
-
-            # Mutate weights.
-            for c in connections:
-                weight = c[2]
-                # Mutation
-                weight += (
-                    (choice([1, -1]) * random() * _WEIGHT_SCALE_FACTOR)
-                    if random() < _WEIGHT_MUTATION_PROBABILITY
-                    else 0)
-                if weight > 1:
-                    weight = 1.0
-                if weight < -1:
-                    weight = -1.0
-                # Replacement
-                weight = (
-                    (choice([1, -1]) * random())
-                    if random() < _WEIGHT_REPLACEMENT_PROBABILITY
-                    else weight)
-                c[2] = weight
-
+            nodes, connections = _cross_genome([s["genome"] for s in states])
+            _mutate_weights(connections)
+            _enable_disable_connections(connections)
+            _add_connection(nodes, connections)
+            _add_node(nodes, connections)
             new_states.append({"agent": {"genome": (nodes, connections)}})
 
         self._generations_count += 1

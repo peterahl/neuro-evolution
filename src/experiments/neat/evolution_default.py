@@ -4,18 +4,22 @@ from itertools import count
 from random import random, choice
 
 from ne_simulator.evolution import Evolution
-from ne_simulator.sim_objects.neat_agent import _INPUT_NUMBER
+from ne_simulator.sim_objects.neat_agent import _INPUT_NUMBER, Node, Connection
 from ne_simulator.sim_objects.neat_agent import _OUTPUT_NUMBER
 from ne_simulator.sim_objects.neat_agent import NodeType
 
 
 _RANDOM_CONNECTION_PROB = 0.8
 
-_node_id_seq = count()
+node_id_seq = count()
 
-_inovation_id_seq = count()
+_innovation_id_seq = count()
 
-_inovations = defaultdict(lambda: next(_inovation_id_seq))
+innovations = defaultdict(lambda: next(_innovation_id_seq))
+
+
+def random_weight():
+    return choice([1, -1]) * random()
 
 
 class Evolution(Evolution):
@@ -28,10 +32,10 @@ class Evolution(Evolution):
             **kwds)
 
         in_nodes = [
-            (next(_node_id_seq), NodeType.INPUT)
+            Node(next(node_id_seq), NodeType.INPUT)
             for _ in range(_INPUT_NUMBER)]
         out_nodes = [
-            (next(_node_id_seq), NodeType.OUTPUT)
+            Node(next(node_id_seq), NodeType.OUTPUT)
             for _ in range(_OUTPUT_NUMBER)]
         for simulation_state in self._simulation_states:
             connections = []
@@ -41,10 +45,10 @@ class Evolution(Evolution):
 
                 if connection_prob > _RANDOM_CONNECTION_PROB:
                     out_node, _ = choice(out_nodes)
-                    weight = choice([1, -1]) * random()
                     connections.append(
-                        [node, out_node, weight, _inovations[(node, out_node)]]
-                    )
+                        Connection(
+                            node, out_node, random_weight(),
+                            innovations[(node, out_node)], True))
             simulation_state["agent"] = {}
             simulation_state["agent"]["genome"] = (
                 in_nodes + out_nodes, connections)
