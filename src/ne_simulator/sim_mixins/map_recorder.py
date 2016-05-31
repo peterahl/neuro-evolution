@@ -12,9 +12,9 @@ class MapRecorder():
     [["###", "# #", "###"]]
     """
 
-    def __init__(self, configuration, state):
+    def __init__(self, configuration, state, generation_id, simulation_id):
         self._maps = []
-        super().__init__(configuration, state)
+        super().__init__(configuration, state, generation_id, simulation_id)
 
     @property
     def maps(self):

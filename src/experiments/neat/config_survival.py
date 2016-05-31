@@ -20,6 +20,7 @@ SIMULATION_COUNTS = 20
 SCENARIOS = [
     {
         SIMULATOR_CLASS: [
+            "ne_simulator.sim_mixins.MapPrinter",
             "ne_simulator.sim_mixins.UntilNoObjects",
             "ne_simulator.Simulator"
         ],
@@ -29,6 +30,8 @@ SCENARIOS = [
             # CONFIGURATION_PARAMETERS: {
             # },
             "until_no_objects": (NeatAgent),
+            "map_printer_output_dir": "./out",
+            "map_printer_delimiter": lambda x: "-"
         }
     }
 ]
