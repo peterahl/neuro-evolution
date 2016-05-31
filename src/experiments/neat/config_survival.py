@@ -13,9 +13,10 @@ from ne_simulator.sim_objects.sim_agent import SCORE_MONITOR
 EVOLUTION = "survival"
 
 EVOLUTION_KWDS = {
+    "max_generations": 100
 }
 
-SIMULATION_COUNTS = 20
+SIMULATION_COUNTS = 60
 
 SCENARIOS = [
     {

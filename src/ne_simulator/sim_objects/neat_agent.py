@@ -168,5 +168,8 @@ class NeatAgent(SimAgent):
             except ValueError:  # no output selected
                 self._action = SimObject.Action.DO_NOTHING
 
+            if self._action == SimObject.Action.MOVE:
+                self._energy -= 0.1  # Movement a bit more costly
+
 
 NeatAgent.register()

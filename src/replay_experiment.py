@@ -7,11 +7,13 @@ import os
 from os.path import join
 from subprocess import call
 from time import sleep
+from sys import exit
+from pprint import pprint
 
 
 # Defaults
 input_folder = './out'
-default_matrix_columns = 10
+default_matrix_columns = 18
 map_width = None
 map_height = None
 
@@ -25,6 +27,8 @@ for filename in files:
 star_agents = [
     sorted(generations[generation], key=itemgetter(0), reverse=True)[0][1]
     for generation in sorted(generations.keys())]
+
+star_agents = star_agents[-6 * default_matrix_columns:]
 
 star_agents = [
     [open(join(input_folder, e), "rt") for _, e in g]
@@ -71,5 +75,5 @@ while not end_of_play:
             for _ in range(map_height - 1):
                 print()
 
-    sleep(0.1)
+    sleep(0.6)
     call(['clear'])

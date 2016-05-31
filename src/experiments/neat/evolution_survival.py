@@ -7,24 +7,25 @@ from ne_simulator.sim_objects.neat_agent import NodeType, Connection, Node
 from .evolution_default import Evolution as DefaultEvolution, innovations, \
     node_id_seq, random_weight
 
+_TOP_PERCENTAGE = 0.40
 
-_MAX_GENERATIONS = 40
-
-_TOP_PERCENTAGE = 0.33
-
-_WEIGHT_MUTATION_PROBABILITY = 0.33
+_WEIGHT_MUTATION_PROBABILITY = 0.15
 
 _WEIGHT_SCALE_FACTOR = 0.15
 
 _WEIGHT_REPLACEMENT_PROBABILITY = 0.05
 
-_ADD_CONNECTION_PROBABILITY = 0.2
+_ADD_CONNECTION_PROBABILITY = 0.10
 
-_ADD_NODE_PROBABILITY = 0.1
+_ADD_NODE_PROBABILITY = 0.10
 
 _DISABLE_PROBABILITY = 0.05
 
 _ENABLE_PROBABILITY = 0.05
+
+_NOT_MUTATE_PROBABILITY = 0.1
+
+_CROSS_PROBABILITY = 0.9
 
 
 def _get_random_elements(values, count):
@@ -47,6 +48,12 @@ def _cross_genome(parents):
     nodes1, connections1 = parent1
     nodes2, connections2 = parent2
 
+    if random() > _CROSS_PROBABILITY:
+        if random() < 0.5:
+            return list(nodes1), list(connections1)
+        else:
+            return list(nodes2), list(connections2)
+
     # Get invoation numbers.
     innovation_numbers = sorted(list(
         set(c.innovation for c in connections1) |
@@ -66,7 +73,7 @@ def _cross_genome(parents):
 
     nodes = list(set(nodes1) | set(nodes2))
 
-    #return _cleanup_nodes(nodes, connections), connections
+    # return _cleanup_nodes(nodes, connections), connections
     return nodes, connections
 
 
@@ -153,6 +160,7 @@ class Evolution(DefaultEvolution):
         kwds["multiprocessing"] = True
         super().__init__(*args, **kwds)
         self._generations_count = 0
+        self._max_generations = kwds["max_generations"]
 
     def evolve(self, simulation_states):
         """
@@ -203,11 +211,13 @@ class Evolution(DefaultEvolution):
         new_states = []
         for _ in simulation_states:
             nodes, connections = _cross_genome([s["genome"] for s in states])
-            _mutate_weights(connections)
-            _enable_disable_connections(connections)
-            _add_connection(nodes, connections)
-            _add_node(nodes, connections)
+            if random() > _NOT_MUTATE_PROBABILITY:
+                _mutate_weights(connections)
+                _enable_disable_connections(connections)
+                _add_connection(nodes, connections)
+                _add_node(nodes, connections)
+
             new_states.append({"agent": {"genome": (nodes, connections)}})
 
         self._generations_count += 1
-        return self._generations_count < _MAX_GENERATIONS, new_states
+        return self._generations_count < self._max_generations, new_states
