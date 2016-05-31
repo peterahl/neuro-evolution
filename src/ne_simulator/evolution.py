@@ -14,9 +14,13 @@ SIMULATOR_CONFIGURATION = "configuration"
 SIMULATIONS_COUNT = "simulations_count"
 
 
-def _run_simulation(queue, simulator_class, configuration, state):
+def _run_simulation(
+        queue, simulator_class, configuration, state, generation_id,
+        simulation_id):
     # Run and put resulting state information into queue.
-    queue.put(simulator_class(configuration, state).run())
+    simulator = simulator_class(
+        configuration, state, generation_id, simulation_id)
+    queue.put(simulator.run())
 
 
 class Evolution():
@@ -38,34 +42,41 @@ class Evolution():
         """ Return should_continue and new states. """
         return False, None
 
-    def _gen_threads(self, simulator_class, configuration):
+    def _gen_threads(self, simulator_class, configuration, generation_count):
         queues = [Queue() for _ in range(len(self._simulation_states))]
         simulators = [
             Thread(
                 target=_run_simulation,
-                args=(queue, simulator_class, configuration, state))
-            for queue, state in zip(queues, self._simulation_states)]
+                args=(
+                    queue, simulator_class, configuration, state,
+                    generation_count, i))
+            for i, (queue, state) in
+            enumerate(zip(queues, self._simulation_states))]
         return queues, simulators
 
-    def _gen_processes(self, simulator_class, configuration):
+    def _gen_processes(self, simulator_class, configuration, generation_count):
         queues = [ProcessQueue() for _ in range(len(self._simulation_states))]
         simulators = [
             Process(
                 target=_run_simulation,
-                args=(queue, simulator_class, configuration, state))
-            for queue, state in zip(queues, self._simulation_states)]
+                args=(
+                    queue, simulator_class, configuration, state,
+                    generation_count, i))
+            for i, (queue, state) in
+            enumerate(zip(queues, self._simulation_states))]
         return queues, simulators
 
-    def _run_one_generation(self, simulator_class, configuration):
+    def _run_one_generation(
+            self, simulator_class, configuration, generation_count):
         """ Spawn as many threads as there are states, run the simulators in
         parallel, read the new state and wait for the threads to finish.
         """
         if self._multiprocessing:
             queues, simulators = self._gen_processes(
-                simulator_class, configuration)
+                simulator_class, configuration, generation_count)
         else:
             queues, simulators = self._gen_threads(
-                simulator_class, configuration)
+                simulator_class, configuration, generation_count)
         for t in simulators:
             t.start()
         self._simulation_states = [q.get() for q in queues]
@@ -91,12 +102,14 @@ class Evolution():
         for scenario in self._scenarios:
             self.scenario_start()
             should_continue = None
+            generation_count = 0
             while should_continue is None or should_continue:
                 self._run_one_generation(
                     scenario[SIMULATOR_CLASS],
-                    scenario[SIMULATOR_CONFIGURATION])
+                    scenario[SIMULATOR_CONFIGURATION], generation_count)
                 should_continue, self._simulation_states = self.evolve(
                     self._simulation_states)
+                generation_count += 1
 
 
 class NoEvolution(Evolution):

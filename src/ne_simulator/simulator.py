@@ -6,7 +6,7 @@ from .sim_objects import SimObject, Empty, Wall
 
 class Simulator():
 
-    def __init__(self, configuration, state):
+    def __init__(self, configuration, state, generation_id, simulation_id):
         super().__init__()
         self._map = ObjectsMap(configuration, state)
         self._step_count = 0

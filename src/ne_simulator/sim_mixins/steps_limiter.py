@@ -9,9 +9,9 @@ class StepsLimiter():
          to 0.
     """
 
-    def __init__(self, configuration, state):
+    def __init__(self, configuration, state, generation_id, simulation_id):
         self._steps = configuration.get("steps_limiter_steps", 0)
-        super().__init__(configuration, state)
+        super().__init__(configuration, state, generation_id, simulation_id)
 
     def should_run(self):
         self._steps -= 1
